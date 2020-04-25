@@ -68,6 +68,43 @@
 			<p>Created by <a href="http://todomvc.com">you</a></p>
 			<p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
 		</footer>
+
+		<!-- templates -->
+
+		<script id="todo-template" type="text/x-handlebars-template">
+			{{#this}}
+			<li {{#if completed}}class="completed"{{/if}} data-id="{{id}}">
+				<div class="view">
+					<input class="toggle" type="checkbox" {{#if completed}}checked{{/if}}>
+					<label>{{title}}</label>
+					<button class="destroy"></button>
+				</div>
+				<input class="edit" value="{{title}}">
+			</li>
+		{{/this}}
+		</script>
+
+		<script id="footer-template" type="text/x-handlebars-template">
+			<span class="todo-count"><strong>{{activeTodoCount}}</strong> {{activeTodoWord}} left</span>
+			<ul class="filters">
+				<li>
+					<a name="all" {{#eq filter 'all'}}class="selected"{{/eq}} href="#">All</a>
+				</li>
+				<li>
+					<a name="active" {{#eq filter 'active'}}class="selected"{{/eq}} href="#">Active</a>
+				</li>
+				<li>
+					<a name="completed" {{#eq filter 'completed'}}class="selected"{{/eq}} href="#">Completed</a>
+				</li>
+			</ul>
+			{{#if completedTodos}}<button class="clear-completed">Clear completed</button>{{/if}}
+		</script>
+
+		<!-- debug area -->
+		<label style="font-size: smaller; color: darkgray;"><input type="checkbox" name="debug" value="value" style="vertical-align:middle;">Debug</label>
+		<pre style="display: none;" class="debug">
+		</pre>
+
 		<!-- Scripts here. Don't remove ↓ -->
 		<script src="node_modules/todomvc-common/base.js"></script>
 		<script src="node_modules/jquery/dist/jquery.js"></script>

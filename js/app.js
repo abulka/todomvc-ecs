@@ -25,11 +25,35 @@
 
 	// Systems
 
-	engine.system('controller-model', ['data'], (entity, { data }) => {
+	const todoTemplate = Handlebars.compile($('#todo-template').html());
+	const $todolist = $('ul.todo-list')
+	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
 		// if (entity.name == 'model-welcome-message') $('input[name=welcome]').val(data.val)
 		// else if (entity.name == 'model-firstname') $('input[name=firstname]').val(data.val)
 		// else if (entity.name == 'model-surname') $('input[name=surname]').val(data.val)
-		console.log(`controller-model: ${entity.name}, ${JSON.stringify(data)}`);
+
+		function _insert_gui(li, id) {
+			// inserts or replaces li in 'ul.todo-list', returns the new $(li)
+			let $existing_li = $(`li[data-id=${id}]`)
+			if ($existing_li.length == 1)
+				$existing_li.replaceWith(li)  // replace existing li
+			else if ($todolist.find('li').length == 0)
+				$todolist.append($(li))  // create initial li
+			else
+				$(li).insertAfter($todolist.find('li').last())  // append after last li
+			return $(`li[data-id=${id}]`)
+		}
+
+		function build() {
+			let li = todoTemplate(data);
+			let $res = _insert_gui(li, data.id);
+			// this.bind_events($res);
+			// this.apply_filter(this.app.filter);
+		}
+		
+		build()
+
+		console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
 	});
 
 	// Boot
