@@ -31,17 +31,20 @@
 	const $todolist = $('ul.todo-list')
 	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
 
-		function event_to_model(event) {
+		function event_to_entity(event) {
 			let id = $(event.target).closest("li").data("id")
-			let model = engine.getEntity(`todoitem-${id}`).getComponent('data')
-			return model
+			return engine.getEntity(`todoitem-${id}`)
+		}
+		function event_to_component(event) {
+			let id = $(event.target).closest("li").data("id")
+			return event_to_entity(event).getComponent('data')
 		}
 
 		function editingMode(event) {
 			let $input = $(event.target).closest('li').addClass('editing').find('.edit');
 			// puts caret at end of input
 			$input.val('');
-			let model = event_to_model(event)
+			let model = event_to_component(event)
 			$input.val(model.title)  // sets the correct initial value
 			$input.focus();
 		}
@@ -57,7 +60,7 @@
 		}
 	
 		function toggle(event) {
-			let model = event_to_model(event)
+			let model = event_to_component(event)
 			model.completed = !model.completed
 			console.log(model)
 		}
@@ -69,7 +72,7 @@
 				.on('dblclick', 'label', editingMode)
 				.on('keyup', '.edit', editKeyup)
 				.on('focusout', '.edit', update)
-				// .on('click', '.destroy', this.destroy.bind(this));
+				.on('click', '.destroy', destroy)
 		}
 
 		function update(e) {
@@ -83,7 +86,7 @@
 				destroy(e);
 				return;
 			} else {
-				let model = event_to_model(event)
+				let model = event_to_component(event)
 				model.title = val
 				console.log(model)
 			}
@@ -92,11 +95,13 @@
 			engine.tick()
 		}
 		
-		function destroy(e) {
-			console.log(`controller for '${this.model_ref.title}' got DELETE user event from GUI ***`)
-			this.model_ref.delete()  // we will eventually get a notification from the model to delete this controller instance
+		function destroy(event) {
+			let data = event_to_component(event)
+			console.log(`controller for '${data.title}' got DELETE user event from GUI ***`)
+			_delete_gui(data.id)
+			engine.removeEntity(data.id)
 		}
-	
+
 		function _insert_gui(li, id) {
 			// inserts or replaces li in 'ul.todo-list', returns the new $(li)
 			let $existing_li = $(`li[data-id=${id}]`)
@@ -107,6 +112,11 @@
 			else
 				$(li).insertAfter($todolist.find('li').last())  // append after last li
 			return $(`li[data-id=${id}]`)
+		}
+
+		function _delete_gui(id) {
+			// delete the GUI element
+			$(`li[data-id=${id}]`).remove()
 		}
 
 		function build() {
