@@ -28,10 +28,32 @@
 	const todoTemplate = Handlebars.compile($('#todo-template').html());
 	const $todolist = $('ul.todo-list')
 	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
-		// if (entity.name == 'model-welcome-message') $('input[name=welcome]').val(data.val)
-		// else if (entity.name == 'model-firstname') $('input[name=firstname]').val(data.val)
-		// else if (entity.name == 'model-surname') $('input[name=surname]').val(data.val)
 
+		// Interesting 
+		// Also, how do we find the entity in order to change its component data.completed value?
+		// TRICKY
+		function toggle($e) {
+			let $t = $e.target
+			let id = $t.attr('data-id') // TODO fix syntax id of the li clicked on
+			let entity = getEntity(id)
+			let component = entity.getComponent('data')
+
+			component.completed = !component.completed
+			// but no refresh yet till next tick.... ?
+		}
+
+		function bind_events($gui_li) {
+			// li element needs to be re-bound every time it is rebuilt/rendered, which happens after each "modified todoitem" event notification
+			($gui_li)
+				.on('change', '.toggle', toggle)//.bind(this))  // - probably don't need to bind. 
+
+				// .on('change', '.toggle', this.toggle.bind(this))
+				// .on('dblclick', 'label', this.editingMode.bind(this))
+				// .on('keyup', '.edit', this.editKeyup.bind(this))
+				// .on('focusout', '.edit', this.update.bind(this))
+				// .on('click', '.destroy', this.destroy.bind(this));
+		}
+	
 		function _insert_gui(li, id) {
 			// inserts or replaces li in 'ul.todo-list', returns the new $(li)
 			let $existing_li = $(`li[data-id=${id}]`)
@@ -47,7 +69,7 @@
 		function build() {
 			let li = todoTemplate(data);
 			let $res = _insert_gui(li, data.id);
-			// this.bind_events($res);
+			bind_events($res);
 			// this.apply_filter(this.app.filter);
 		}
 		
