@@ -29,17 +29,13 @@
 	const $todolist = $('ul.todo-list')
 	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
 
-		// Interesting 
-		// Also, how do we find the entity in order to change its component data.completed value?
-		// TRICKY
-		function toggle($e) {
-			let $t = $e.target
-			let id = $t.attr('data-id') // TODO fix syntax id of the li clicked on
-			let entity = getEntity(id)
+		function toggle(event) {
+			let id = $(event.target).closest("li").data("id")
+			let entity = engine.getEntity(`todoitem-${id}`)
 			let component = entity.getComponent('data')
-
 			component.completed = !component.completed
-			// but no refresh yet till next tick.... ?
+			console.log(component)
+			// but no refresh yet till next tick.... ? But its not needed cos the gui is already up to date?
 		}
 
 		function bind_events($gui_li) {
