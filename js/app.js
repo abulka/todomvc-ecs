@@ -6,6 +6,8 @@
 	// Instantiating engine, timer and simulator
 	const engine = new Jecs.Engine();
 	const util = new Util();
+	var ENTER_KEY = 13;
+	var ESCAPE_KEY = 27;
 
 	// Declare entities - this is like the model, but without data - we attach that later, as 'components'
 	function create_todoitem(title, completed, id) {
@@ -29,6 +31,32 @@
 	const $todolist = $('ul.todo-list')
 	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
 
+		function event_to_model(event) {
+			let id = $(event.target).closest("li").data("id")
+			let model = engine.getEntity(`todoitem-${id}`).getComponent('data')
+			return model
+		}
+
+		function editingMode(event) {
+			let $input = $(event.target).closest('li').addClass('editing').find('.edit');
+			// puts caret at end of input
+			$input.val('');
+			let id = $(event.target).closest("li").data("id")
+			let model = engine.getEntity(`todoitem-${id}`).getComponent('data')
+			$input.val(model.title)  // sets the correct initial value
+			$input.focus();
+		}
+
+		function editKeyup(e) {
+			if (e.which === ENTER_KEY) {
+				e.target.blur();
+			}
+	
+			if (e.which === ESCAPE_KEY) {
+				$(e.target).data('abort', true).blur();
+			}
+		}
+	
 		function toggle(event) {
 			let id = $(event.target).closest("li").data("id")
 			let entity = engine.getEntity(`todoitem-${id}`)
@@ -41,13 +69,35 @@
 		function bind_events($gui_li) {
 			// li element needs to be re-bound every time it is rebuilt/rendered, which happens after each "modified todoitem" event notification
 			($gui_li)
-				.on('change', '.toggle', toggle)//.bind(this))  // - probably don't need to bind. 
-
-				// .on('change', '.toggle', this.toggle.bind(this))
-				// .on('dblclick', 'label', this.editingMode.bind(this))
-				// .on('keyup', '.edit', this.editKeyup.bind(this))
-				// .on('focusout', '.edit', this.update.bind(this))
+				.on('change', '.toggle', toggle)
+				.on('dblclick', 'label', editingMode)
+				.on('keyup', '.edit', editKeyup)
+				.on('focusout', '.edit', update)
 				// .on('click', '.destroy', this.destroy.bind(this));
+		}
+
+		function update(e) {
+			var el = e.target;
+			var $el = $(el);
+			var val = $el.val().trim();
+	
+			if ($el.data('abort')) {
+				$el.data('abort', false);
+			} else if (!val) {
+				destroy(e);
+				return;
+			} else {
+				let model = event_to_model(event)
+				model.title = val
+			}
+	
+			$(e.target).closest('li').removeClass('editing')
+			engine.tick()  // ??
+		}
+		
+		function destroy(e) {
+			console.log(`controller for '${this.model_ref.title}' got DELETE user event from GUI ***`)
+			this.model_ref.delete()  // we will eventually get a notification from the model to delete this controller instance
 		}
 	
 		function _insert_gui(li, id) {
