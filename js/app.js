@@ -9,6 +9,10 @@
 	var ENTER_KEY = 13;
 	var ESCAPE_KEY = 27;
 
+	Handlebars.registerHelper('eq', function (a, b, options) {
+		return a === b ? options.fn(this) : options.inverse(this);
+	});
+	
 	// Declare entities - this is like the model, but without data - we attach that later, as 'components'
 	function create_todoitem(title, completed, id) {
 		if (id == undefined)
@@ -25,7 +29,11 @@
 	create_todoitem("A")
 	create_todoitem("B", true)
 
-	// Systems
+	// App vars etc.
+
+	let todoCount = 0
+	let activeTodoCount = 0
+	let app_filter = 'all'
 
 	let markAllComplete = {active: false, state: undefined}
 	function setMarkAllComplete(state) {
@@ -35,13 +43,31 @@
 	function resetMarkAllComplete() {
 		markAllComplete.active = false
 	}
+
+	// Systems
+
 	engine.system('mark-all-complete', ['data'], (entity, { data }) => {
 		if (markAllComplete.active) {
 			console.assert(markAllComplete.state != undefined)
 			data.completed = markAllComplete.state
 			console.log(`mark-all-complete: ${entity.name}, ${JSON.stringify(data)}`);
 		}
+
+		// reset for next system - yuk, plus its repeated for each entity - double yuk
+		todoCount = 0
+		activeTodoCount = 0
+	
 	});
+
+
+	engine.system('counting', ['data'], (entity, { data }) => {
+		todoCount++
+		if (!data.completed)
+			activeTodoCount++
+		// console.log(`counting: ${entity.name}, ${JSON.stringify(data)} todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
+		console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
+	});
+
 
 	const todoTemplate = Handlebars.compile($('#todo-template').html());
 	const $todolist = $('ul.todo-list')
@@ -197,7 +223,67 @@
 	const controller_header = new ControllerHeader()
 
 
-
+	class ControllerFooter {  // handles filters, reporting number of items
+		constructor() {
+			this.$footer = $('footer'),
+			this.$footer_interactive_area = $('.footer')
+			this.footerTemplate = Handlebars.compile($('#footer-template').html());
+			  
+			// Gui events
+			this.$footer.on('click', '.clear-completed', this.destroyCompleted.bind(this))
+			this.$footer.on('click', 'ul', this.filter_click.bind(this))
+	
+			// inject the proper footer, which contains name=
+			this.renderFooter()
+	
+			// Internal events
+			// document.addEventListener("app model changed", (event) => { this.notify(event) })
+			// document.addEventListener("modified todoitem", (event) => { this.notify(event) })
+		}
+	
+		destroyCompleted(e) {
+			//this.app.destroyCompleted()  // TODO
+			console.log('not implemented yet')
+		}
+	
+		filter_click(e) {
+			var $el = $(e.target).closest('li');
+			app_filter = $el.find('a').attr("name")
+			this.renderFooter()
+	
+			// this broadcast goes to all the todoitem controllers
+			// NEED TO USE A SYSTEM HERE - SET THE FILTER GLOBALLY AND THE SYSTEM RESPECTS THE FILTER?
+			// OR JUST BLEND IT INTO THE CURRENT MAIN RENDERING SYSTEM
+			// notify_all("filter changed", this, {'filter': this.filter});		
+		}
+	
+		renderFooter() {
+			// this is a System - CALCULATE ALL THIS INFO BY LOOPING
+			// var todoCount = this.app.todos.length;
+			// var activeTodoCount = this.app.getActiveTodos().length;
+			console.log('app_filter', app_filter)
+			var template = this.footerTemplate({
+				activeTodoCount: activeTodoCount,
+				activeTodoWord: util.pluralize(activeTodoCount, 'item'),
+				completedTodos: todoCount - activeTodoCount,
+				filter: app_filter
+			});
+	
+			this.$footer_interactive_area.toggle(todoCount > 0).html(template);
+		}
+	
+		// notify(event) {
+		// 	console.log(`\tcontroller for footer got told to render footer cos '${event.type}'`)
+		// 	this.renderFooter()
+		// }
+	
+	}
+	const controller_footer = new ControllerFooter()
+	
+	engine.on('tick:after', (engine) => {
+		controller_footer.renderFooter()
+	})
+	
 	// Boot
 
 	engine.tick()
