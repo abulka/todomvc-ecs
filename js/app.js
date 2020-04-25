@@ -41,8 +41,7 @@
 			let $input = $(event.target).closest('li').addClass('editing').find('.edit');
 			// puts caret at end of input
 			$input.val('');
-			let id = $(event.target).closest("li").data("id")
-			let model = engine.getEntity(`todoitem-${id}`).getComponent('data')
+			let model = event_to_model(event)
 			$input.val(model.title)  // sets the correct initial value
 			$input.focus();
 		}
@@ -58,12 +57,9 @@
 		}
 	
 		function toggle(event) {
-			let id = $(event.target).closest("li").data("id")
-			let entity = engine.getEntity(`todoitem-${id}`)
-			let component = entity.getComponent('data')
-			component.completed = !component.completed
-			console.log(component)
-			// but no refresh yet till next tick.... ? But its not needed cos the gui is already up to date?
+			let model = event_to_model(event)
+			model.completed = !model.completed
+			console.log(model)
 		}
 
 		function bind_events($gui_li) {
@@ -89,10 +85,11 @@
 			} else {
 				let model = event_to_model(event)
 				model.title = val
+				console.log(model)
 			}
 	
 			$(e.target).closest('li').removeClass('editing')
-			engine.tick()  // ??
+			engine.tick()
 		}
 		
 		function destroy(e) {
