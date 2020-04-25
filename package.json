@@ -1,6 +1,9 @@
 {
   "private": true,
   "dependencies": {
+    "handlebars": "^4.7.4",
+    "jecs": "^2.0.0",
+    "jquery": "~3",
     "todomvc-app-css": "^2.0.0",
     "todomvc-common": "^1.0.0"
   }
