@@ -27,9 +27,27 @@
 
 	// Systems
 
+	let markAllComplete = {active: false, state: undefined}
+	function setMarkAllComplete(state) {
+		markAllComplete.active = true
+		markAllComplete.state = state
+	}
+	function resetMarkAllComplete() {
+		markAllComplete.active = false
+	}
+	engine.system('mark-all-complete', ['data'], (entity, { data }) => {
+		if (markAllComplete.active) {
+			console.assert(markAllComplete.state != undefined)
+			data.completed = markAllComplete.state
+			console.log(`mark-all-complete: ${entity.name}, ${JSON.stringify(data)}`);
+		}
+	});
+
 	const todoTemplate = Handlebars.compile($('#todo-template').html());
 	const $todolist = $('ul.todo-list')
 	engine.system('controller-todoitem', ['data'], (entity, { data }) => {
+
+		resetMarkAllComplete()  // reset previous system data - Hmmm - this should be done with a post system event? but nothing like this exists
 
 		function event_to_entity(event) {
 			let id = $(event.target).closest("li").data("id")
@@ -128,7 +146,7 @@
 			// this.apply_filter(this.app.filter);
 		}
 		
-		build()
+		build()  // TODO this gets called each tick - wasteful?  its replacing each li with a new one even if it hasn't changed!
 
 		console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
 	});
@@ -168,13 +186,17 @@
 		toggleAll(e) {
 			var isChecked = $(e.target).prop('checked');
 	
-			// AHA - this is where a System could work!!!
+			// AHA - this is where a System could work!!!  done.
 			// this.app.todos.forEach(function (todo) {
 			// 	todo.completed = isChecked;
 			// });
+			setMarkAllComplete(isChecked)  // a System will be used to loop through
+			engine.tick()
 		}
 	}
 	const controller_header = new ControllerHeader()
+
+
 
 	// Boot
 
