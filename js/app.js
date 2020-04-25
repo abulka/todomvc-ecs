@@ -63,6 +63,7 @@
 			let model = event_to_component(event)
 			model.completed = !model.completed
 			console.log(model)
+			engine.tick()
 		}
 
 		function bind_events($gui_li) {
@@ -99,7 +100,8 @@
 			let data = event_to_component(event)
 			console.log(`controller for '${data.title}' got DELETE user event from GUI ***`)
 			_delete_gui(data.id)
-			engine.removeEntity(data.id)
+			engine.removeEntity(`todoitem-${data.id}`)
+			engine.tick()
 		}
 
 		function _insert_gui(li, id) {
@@ -130,6 +132,49 @@
 
 		console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
 	});
+
+
+	// engine.system('controller-header', ['data'], (entity, { data }) => {
+	// 	console.log(`controller-header: ${entity.name}, ${JSON.stringify(data)}`);
+	// });
+	class ControllerHeader {  // handles adding new items and toggling all as completed/not completed
+		// constructor(app, gui_dict) {
+		constructor() {
+			// this.app = app
+			// this.gui = gui_dict  // some not used cos can derive gui from $(e.target)
+			this.$input = $('.new-todo')
+			this.$toggle_all = $('.toggle-all')
+
+			// Gui events -> this controller
+			this.$input.on('keyup', (event) => { this.on_keyup(event) })
+			this.$toggle_all.on('change', this.toggleAll.bind(this))
+		}
+	
+		on_keyup(e) {
+			var $input = $(e.target);
+			console.assert($input.get(0) == this.$input.get(0))
+			var val = $input.val().trim();
+	
+			if (e.which !== ENTER_KEY || !val)
+				return;
+	
+			$input.val('');
+	
+			create_todoitem(val)
+			// this.app.add(val, util.uuid(), false, {during_load: false})  // title, id, completed
+			engine.tick()
+		}
+	
+		toggleAll(e) {
+			var isChecked = $(e.target).prop('checked');
+	
+			// AHA - this is where a System could work!!!
+			// this.app.todos.forEach(function (todo) {
+			// 	todo.completed = isChecked;
+			// });
+		}
+	}
+	const controller_header = new ControllerHeader()
 
 	// Boot
 
