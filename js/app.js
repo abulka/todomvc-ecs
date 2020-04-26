@@ -148,11 +148,28 @@
             engine.tick()
         }
 
+        function _update_gui(data) {
+            // a bit laborious - easier to replace entire li, but let's give it a go
+            /*
+			<li {{#if completed}}class="completed"{{/if}} data-id="{{id}}">
+				<div class="view">
+					<input class="toggle" type="checkbox" {{#if completed}}checked{{/if}}>
+					<label>{{title}}</label>
+					<button class="destroy"></button>
+				</div>
+				<input class="edit" value="{{title}}">            
+            */
+            let $existing_li = $(`li[data-id=${data.id}]`)
+            $existing_li.toggleClass("completed", data.completed)
+            $existing_li.find('input.toggle').prop('checked', data.completed)
+            $existing_li.find('label').text(data.title)
+        }
+
         function _insert_gui(li, id) {
             // inserts or replaces li in 'ul.todo-list', returns the new $(li)
             let $existing_li = $(`li[data-id=${id}]`)
             if ($existing_li.length == 1)
-                $existing_li.replaceWith(li)  // replace existing li
+                $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
             else if ($todolist.find('li').length == 0)
                 $todolist.append($(li))  // create initial li
             else
@@ -172,7 +189,14 @@
             // this.apply_filter(this.app.filter);
         }
         
-        build()  // TODO this gets called each tick - wasteful?  its replacing each li with a new one even if it hasn't changed!
+        if ($(`li[data-id=${data.id}]`).length == 0) {  // only build if it doesn't exist
+            build()
+            console.log('build', data)
+        }
+        else {  // need to update instead
+            _update_gui(data)
+            console.log('update', data)
+        }
 
         console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
     });
