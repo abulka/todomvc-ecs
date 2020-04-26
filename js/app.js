@@ -206,22 +206,38 @@
         }
         else {  // efficiently update instead
             // _update_gui(data)
-            entity.setComponent('update', {})
-            console.log('update', data)
+            entity.setComponent('action', 'update')
+            // console.log('update', data)
         }
 
-        console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
+        console.log(`controller-todoitem: ${JSON.stringify(data)}`);
     });
 
-    engine.system('controller-update-todoitem', ['data', 'update'], (entity, { data, _ }) => {
-        let $existing_li = $(`li[data-id=${data.id}]`)
-        $existing_li.toggleClass("completed", data.completed)
-        $existing_li.find('input.toggle').prop('checked', data.completed)
-        $existing_li.find('label').text(data.title)
-        entity.deleteComponent('update')  // TODO could have permanent action component?
-        console.log(`controller-update-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
+    engine.system('controller-update-todoitem', ['data', 'action'], (entity, components) => {
+        console.log(`controller-update-todoitem: ${JSON.stringify(components)}`);
+        let data = components.data
+        if (components.action == 'update') {
+            let $existing_li = $(`li[data-id=${data.id}]`)
+            $existing_li.toggleClass("completed", data.completed)
+            $existing_li.find('input.toggle').prop('checked', data.completed)
+            $existing_li.find('label').text(data.title)
+        }
+        // else
+        // else if (gui.insert) {
+        //     function _insert_gui(li, id) {
+        //         // inserts or replaces li in 'ul.todo-list', returns the new $(li)
+        //         let $existing_li = $(`li[data-id=${id}]`)
+        //         if ($existing_li.length == 1)
+        //             $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
+        //         else if ($todolist.find('li').length == 0)
+        //             $todolist.append($(li))  // create initial li
+        //         else
+        //             $(li).insertAfter($todolist.find('li').last())  // append after last li
+        //         return $(`li[data-id=${id}]`)
+        //     }            
+        // }
+        components.action = ''
     });
-
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
         let $el = $(`li[data-id=${data.id}]`)
