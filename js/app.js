@@ -45,6 +45,7 @@
         }
         reset() {
             this.active = false
+            this._state = undefined
         }        
     }
     let markAllComplete = new MarkAllComplete()
@@ -71,9 +72,11 @@
     });
 
     engine.system('housekeeping-reset-counts', ['housekeeping'], (entity, { housekeeping }) => {
+        console.log(`housekeeping-reset-counts (BEGIN): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(markAllComplete)}`);
+        markAllComplete.reset()
         todoCount = 0
         activeTodoCount = 0
-        console.log(`housekeeping-reset-counts: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
+        console.log(`housekeeping-reset-counts (END): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(markAllComplete)}`);
     });
 
     engine.system('counting', ['data'], (entity, { data }) => {
@@ -84,12 +87,9 @@
         console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
     });
 
-
     const todoTemplate = Handlebars.compile($('#todo-template').html());
     const $todolist = $('ul.todo-list')
     engine.system('controller-todoitem', ['data'], (entity, { data }) => {
-
-        markAllComplete.reset()  // reset previous system data - Hmmm - this should be done with a post system event? but nothing like this exists
 
         function event_to_entity(event) {
             let id = $(event.target).closest("li").data("id")
