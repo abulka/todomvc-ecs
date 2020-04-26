@@ -31,6 +31,7 @@
     }
 
     // Declare entities - this is like the model, but without data - we attach that later, as 'components'
+    
     function create_todoitem(title, completed, id) {
         if (id == undefined)
             id = util.uuid()
@@ -45,7 +46,7 @@
     function destroy_todoitem(id) {
         // just mark it and keep gui knowledge out of here!
         let todoitem = id_to_entity(id)
-        todoitem.setComponent('action', 'destroy')
+        todoitem.setComponent('destroy', {})
     }
 
     // App vars etc.
@@ -89,12 +90,8 @@
     // todo complexity - hide back into a controller?
 
     function editingMode(event) {
-        let $input = $(event.target).closest('li').addClass('editing').find('.edit');
-        // puts caret at end of input
-        $input.val('');
-        let model = event_to_component(event)
-        $input.val(model.title)  // sets the correct initial value
-        $input.focus();
+        event_to_entity(event).setComponent('editingmode', {})
+        engine.tick()
     }
 
     function editKeyup(e) {
@@ -173,14 +170,11 @@
         }
     });
 
-    engine.system('controller-destroy', ['data', 'action'], (entity, components) => {
-        if (components.action == 'destroy') {
-            let data = components.data
-            $(`li[data-id=${data.id}]`).remove()
-            engine.removeEntity(`todoitem-${data.id}`)
-            console.log(`controller-destroy '${data.title}'`)
-            components.action = ''
-        }
+    engine.system('controller-destroy', ['data', 'destroy'], (entity, {data, _}) => {
+        $(`li[data-id=${data.id}]`).remove()
+        engine.removeEntity(`todoitem-${data.id}`)
+        console.log(`controller-destroy '${data.title}'`)
+        entity.deleteComponent('destroy')  // redundant since its removed
     });
 
     engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
@@ -201,43 +195,38 @@
 
     engine.system('think-todoitem', ['data'], (entity, { data }) => {
         if ($(`li[data-id=${data.id}]`).length == 0) {  // gui li doesn't exist
-            entity.setComponent('action', 'insert')
+            entity.setComponent('insert', {})
+            console.log(`think-todoitem: ${JSON.stringify(data)}, insert`);
         }
         else {
-            entity.setComponent('action', 'update')
-        }
-        console.log(`think-todoitem: ${JSON.stringify(data)}, action=${entity.getComponent('action')}`);
-    });
-
-    engine.system('controller-update-todoitem', ['data', 'action'], (entity, components) => {
-        if (components.action == 'update') {
-            let data = components.data
-            let $existing_li = $(`li[data-id=${data.id}]`)
-
-            // let li = todoTemplate(data);
-            // $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
-
-            $existing_li.toggleClass("completed", data.completed)
-            $existing_li.find('input.toggle').prop('checked', data.completed)
-            $existing_li.find('label').text(data.title)
-
-            console.log(`controller-update-todoitem: ${JSON.stringify(components)}`);
-            components.action = ''
+            entity.setComponent('update', {})
+            console.log(`think-todoitem: ${JSON.stringify(data)}, update`);
         }
     });
 
-    engine.system('controller-insert-todoitem', ['data', 'action'], (entity, components) => {
-        if (components.action == 'insert') {
-            let data = components.data
-            let li = todoTemplate(data);
-            if ($todolist.find('li').length == 0)
-                $todolist.append($(li))  // create initial li when todo gui list is empty
-            else
-                $(li).insertAfter($todolist.find('li').last())  // append after last li
-            bind_events($(`li[data-id=${data.id}]`));
-            console.log(`controller-insert-todoitem: ${JSON.stringify(components)}`);
-            components.action = ''
-        }
+    engine.system('controller-update-todoitem', ['data', 'update'], (entity, {data, _}) => {
+        let $existing_li = $(`li[data-id=${data.id}]`)
+
+        // let li = todoTemplate(data);
+        // $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
+
+        $existing_li.toggleClass("completed", data.completed)
+        $existing_li.find('input.toggle').prop('checked', data.completed)
+        $existing_li.find('label').text(data.title)
+
+        console.log(`controller-update-todoitem: ${JSON.stringify(data)}`);
+        entity.deleteComponent('update')
+    });
+
+    engine.system('controller-insert-todoitem', ['data', 'insert'], (entity, {data, _}) => {
+        let li = todoTemplate(data);
+        if ($todolist.find('li').length == 0)
+            $todolist.append($(li))  // create initial li when todo gui list is empty
+        else
+            $(li).insertAfter($todolist.find('li').last())  // append after last li
+        bind_events($(`li[data-id=${data.id}]`));
+        console.log(`controller-insert-todoitem: ${JSON.stringify(data)}`);
+        entity.deleteComponent('insert')
     });
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
@@ -250,6 +239,17 @@
             $el.hide()
         else
             $el.show()
+    });
+
+    engine.system('editing-mode-on', ['data', 'editingmode'], (entity, {data, _}) => {
+        let $li = $(`li[data-id=${data.id}]`)
+        let $input = $li.addClass('editing').find('.edit')
+        // puts caret at end of input
+        $input.val('');
+        $input.val(data.title)  // sets the correct initial value
+        $input.focus();
+        console.log(`editing-mode-on: ${JSON.stringify(data)}`);
+        entity.deleteComponent('editingmode')
     });
 
     // No need for these to be Systems - just regular Controller objects instead, since there is no looping?
