@@ -120,23 +120,8 @@
             .on('click', '.destroy', destroy)
     }
 
-    function update(e) {
-        var el = e.target;
-        var $el = $(el);
-        var val = $el.val().trim();
-
-        if ($el.data('abort')) {
-            $el.data('abort', false);
-        } else if (!val) {
-            destroy(e);
-            return;
-        } else {
-            let model = event_to_component(event)
-            model.title = val
-            console.log(model)
-        }
-
-        $(e.target).closest('li').removeClass('editing')
+    function update(event) {
+        event_to_entity(event).setComponent('editingmode-off', {})
         engine.tick()
     }
     
@@ -193,6 +178,34 @@
         console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
     });
 
+    engine.system('editing-mode-on', ['data', 'editingmode'], (entity, {data, _}) => {
+        let $li = $(`li[data-id=${data.id}]`)
+        let $input = $li.addClass('editing').find('.edit')
+        // puts caret at end of input
+        $input.val('');
+        $input.val(data.title)  // sets the correct initial value
+        $input.focus();
+        console.log(`editing-mode-on: ${JSON.stringify(data)}`);
+        entity.deleteComponent('editingmode')
+    });
+
+    engine.system('editing-mode-off', ['data', 'editingmode-off'], (entity, {data, _}) => {
+        let $li = $(`li[data-id=${data.id}]`)
+        let $input = $li.addClass('editing').find('.edit')
+        let val = $input.val().trim()
+        if ($input.data('abort')) {
+            $input.data('abort', false);
+        } else if (!val) {
+            destroy(e);
+            return;
+        } else {
+            data.title = val
+            console.log(`editing-mode-off: ${JSON.stringify(data)}`)
+        }
+        $li.removeClass('editing')
+        entity.deleteComponent('editingmode-off')
+    });
+
     engine.system('think-todoitem', ['data'], (entity, { data }) => {
         if ($(`li[data-id=${data.id}]`).length == 0) {  // gui li doesn't exist
             entity.setComponent('insert', {})
@@ -241,16 +254,10 @@
             $el.show()
     });
 
-    engine.system('editing-mode-on', ['data', 'editingmode'], (entity, {data, _}) => {
-        let $li = $(`li[data-id=${data.id}]`)
-        let $input = $li.addClass('editing').find('.edit')
-        // puts caret at end of input
-        $input.val('');
-        $input.val(data.title)  // sets the correct initial value
-        $input.focus();
-        console.log(`editing-mode-on: ${JSON.stringify(data)}`);
-        entity.deleteComponent('editingmode')
-    });
+ 
+
+
+
 
     // No need for these to be Systems - just regular Controller objects instead, since there is no looping?
     // Maybe we could convert them into Systems?
