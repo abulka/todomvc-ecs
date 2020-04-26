@@ -31,14 +31,9 @@
     }
 
     function destroy_todoitem(id) {
+        // just mark it and keep gui knowledge out of here!
         let todoitem = id_to_entity(id)
-        let data = todoitem.getComponent('data')
-        console.log(`destroying todoitem '${data.title}'`)
-        
-        // _delete_gui(data.id)
-        $(`li[data-id=${id}]`).remove()  // yuk - GUI knowledge in the wrong place
-
-        engine.removeEntity(`todoitem-${data.id}`)
+        todoitem.setComponent('deleted', {})  // this component just acts like a flag
     }
 
     // App vars etc.
@@ -81,15 +76,22 @@
         if (mark_all.active) {
             console.assert(mark_all.state != undefined)
             data.completed = mark_all.state
-            console.log(`mark-all-complete: ${entity.name}, ${JSON.stringify(data)}`);
+            console.log(`mark-all-complete: ${JSON.stringify(data)}`);
         }
     });
 
     engine.system('destroy_completed', ['data'], (entity, { data }) => {
         if (destroy_completed && data.completed) {
-            console.log(`destroy_completed: ${entity.name}, ${JSON.stringify(data)}`);
+            console.log(`destroy_completed: ${JSON.stringify(data)}`);
             destroy_todoitem(data.id)
         }
+    });
+
+    engine.system('controller-delete', ['data', 'deleted'], (entity, { data, _ }) => {
+        // only todo items with the 'deleted' component will be looped through here
+        $(`li[data-id=${data.id}]`).remove()
+        engine.removeEntity(`todoitem-${data.id}`)
+        console.log(`controller-delete '${data.title}'`)
     });
 
     engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
