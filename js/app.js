@@ -57,6 +57,8 @@
     // let mark_complete = engine.entity('mark-complete')
     // mark_complete.setComponent('markall-data', {active: false, state: undefined})
 
+    let step = engine.entity('housekeeping-step')
+    step.setComponent('housekeeping', {})
 
     // Systems
 
@@ -66,13 +68,13 @@
             data.completed = markAllComplete.state
             console.log(`mark-all-complete: ${entity.name}, ${JSON.stringify(data)}`);
         }
-
-        // reset for next system - yuk, plus its repeated for each entity - double yuk
-        todoCount = 0
-        activeTodoCount = 0
-    
     });
 
+    engine.system('housekeeping-reset-counts', ['housekeeping'], (entity, { housekeeping }) => {
+        todoCount = 0
+        activeTodoCount = 0
+        console.log(`housekeeping-reset-counts: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
+    });
 
     engine.system('counting', ['data'], (entity, { data }) => {
         todoCount++
@@ -314,7 +316,6 @@
             // this is a System - CALCULATE ALL THIS INFO BY LOOPING
             // var todoCount = this.app.todos.length;
             // var activeTodoCount = this.app.getActiveTodos().length;
-            console.log('app_filter', app_filter)
             var template = this.footerTemplate({
                 activeTodoCount: activeTodoCount,
                 activeTodoWord: util.pluralize(activeTodoCount, 'item'),
