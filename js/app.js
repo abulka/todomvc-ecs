@@ -5,6 +5,7 @@
 
     // Instantiating engine, timer and simulator
     const engine = new Jecs.Engine();
+
     const util = new Util();
     var ENTER_KEY = 13;
     var ESCAPE_KEY = 27;
@@ -25,10 +26,6 @@
         return entity
     }
 
-    // let todos = [] // do we actually want a collection - the ECS will do it for us!
-    create_todoitem("A")
-    create_todoitem("B", true)
-
     // App vars etc.
 
     class MarkAllComplete {
@@ -48,18 +45,19 @@
             this._state = undefined
         }        
     }
+
+    // let todos = [] // no need for explicit collection - the ECS will do it for us!
+    let app_filter = 'all'
     let markAllComplete = new MarkAllComplete()
     let todoCount = 0
     let activeTodoCount = 0
-    let app_filter = 'all'
-
-    // not really usefule making this an entity, as there is no processing
-    // we can do of anything in a system
-    // let mark_complete = engine.entity('mark-complete')
-    // mark_complete.setComponent('markall-data', {active: false, state: undefined})
 
     let step = engine.entity('housekeeping-step')
     step.setComponent('housekeeping', {})
+
+    // for the use of the 'controller-todoitem' system
+    const todoTemplate = Handlebars.compile($('#todo-template').html());
+    const $todolist = $('ul.todo-list')
 
     // Systems
 
@@ -83,18 +81,15 @@
         todoCount++
         if (!data.completed)
             activeTodoCount++
-        // console.log(`counting: ${entity.name}, ${JSON.stringify(data)} todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
         console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
     });
 
-    const todoTemplate = Handlebars.compile($('#todo-template').html());
-    const $todolist = $('ul.todo-list')
     engine.system('controller-todoitem', ['data'], (entity, { data }) => {
-
         function event_to_entity(event) {
             let id = $(event.target).closest("li").data("id")
             return engine.getEntity(`todoitem-${id}`)
         }
+
         function event_to_component(event) {
             let id = $(event.target).closest("li").data("id")
             return event_to_entity(event).getComponent('data')
@@ -127,7 +122,6 @@
         }
 
         function bind_events($gui_li) {
-            // li element needs to be re-bound every time it is rebuilt/rendered, which happens after each "modified todoitem" event notification
             ($gui_li)
                 .on('change', '.toggle', toggle)
                 .on('dblclick', 'label', editingMode)
@@ -165,16 +159,7 @@
         }
 
         function _update_gui(data) {
-            // a bit laborious - easier to replace entire li, but let's give it a go
-            /*
-			<li {{#if completed}}class="completed"{{/if}} data-id="{{id}}">
-				<div class="view">
-					<input class="toggle" type="checkbox" {{#if completed}}checked{{/if}}>
-					<label>{{title}}</label>
-					<button class="destroy"></button>
-				</div>
-				<input class="edit" value="{{title}}">            
-            */
+            // a bit laborious - easier to replace entire li, but this is more efficient, no rebinding needed either
             let $existing_li = $(`li[data-id=${data.id}]`)
             $existing_li.toggleClass("completed", data.completed)
             $existing_li.find('input.toggle').prop('checked', data.completed)
@@ -202,14 +187,13 @@
             let li = todoTemplate(data);
             let $res = _insert_gui(li, data.id);
             bind_events($res);
-            // this.apply_filter(this.app.filter);
         }
         
         if ($(`li[data-id=${data.id}]`).length == 0) {  // only build if it doesn't exist
             build()
             console.log('build', data)
         }
-        else {  // need to update instead
+        else {  // efficiently update instead
             _update_gui(data)
             console.log('update', data)
         }
@@ -218,7 +202,6 @@
     });
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
-
         let $el = $(`li[data-id=${data.id}]`)
         if (app_filter == 'all')
             $el.show()
@@ -228,18 +211,13 @@
             $el.hide()
         else
             $el.show()
-
     });
 
+    // No need for these to be Systems - just regular Controller objects instead, since there is no looping?
+    // Maybe we could convert them into Systems?
 
-    // engine.system('controller-header', ['data'], (entity, { data }) => {
-    // 	console.log(`controller-header: ${entity.name}, ${JSON.stringify(data)}`);
-    // });
     class ControllerHeader {  // handles adding new items and toggling all as completed/not completed
-        // constructor(app, gui_dict) {
         constructor() {
-            // this.app = app
-            // this.gui = gui_dict  // some not used cos can derive gui from $(e.target)
             this.$input = $('.new-todo')
             this.$toggle_all = $('.toggle-all')
 
@@ -259,18 +237,13 @@
             $input.val('');
     
             create_todoitem(val)
-            // this.app.add(val, util.uuid(), false, {during_load: false})  // title, id, completed
             engine.tick()
         }
     
         toggleAll(e) {
-            var isChecked = $(e.target).prop('checked');
-    
-            // AHA - this is where a System could work!!!  done.
-            // this.app.todos.forEach(function (todo) {
-            // 	todo.completed = isChecked;
-            // });
-            markAllComplete.state = isChecked  // a System will be used to loop through
+            // The 'mark-all-complete' System will be used to loop through all entities and marking them as completed or
+            // not, rather than explictly looping here - interesting.
+            markAllComplete.state = $(e.target).prop('checked')
             engine.tick()
         }
     }
@@ -289,10 +262,6 @@
     
             // inject the proper footer, which contains name=
             this.renderFooter()
-    
-            // Internal events
-            // document.addEventListener("app model changed", (event) => { this.notify(event) })
-            // document.addEventListener("modified todoitem", (event) => { this.notify(event) })
         }
     
         destroyCompleted(e) {
@@ -305,32 +274,17 @@
             app_filter = $el.find('a').attr("name")
             this.renderFooter()
             engine.tick()
-    
-            // this broadcast goes to all the todoitem controllers
-            // NEED TO USE A SYSTEM HERE - SET THE FILTER GLOBALLY AND THE SYSTEM RESPECTS THE FILTER?
-            // OR JUST BLEND IT INTO THE CURRENT MAIN RENDERING SYSTEM
-            // notify_all("filter changed", this, {'filter': this.filter});		
         }
     
         renderFooter() {
-            // this is a System - CALCULATE ALL THIS INFO BY LOOPING
-            // var todoCount = this.app.todos.length;
-            // var activeTodoCount = this.app.getActiveTodos().length;
             var template = this.footerTemplate({
                 activeTodoCount: activeTodoCount,
                 activeTodoWord: util.pluralize(activeTodoCount, 'item'),
                 completedTodos: todoCount - activeTodoCount,
                 filter: app_filter
             });
-    
             this.$footer_interactive_area.toggle(todoCount > 0).html(template);
         }
-    
-        // notify(event) {
-        // 	console.log(`\tcontroller for footer got told to render footer cos '${event.type}'`)
-        // 	this.renderFooter()
-        // }
-    
     }
     const controller_footer = new ControllerFooter()
     
@@ -340,6 +294,8 @@
     
     // Boot
 
+    create_todoitem("A")
+    create_todoitem("B", true)
     engine.tick()
 
 })(window);
