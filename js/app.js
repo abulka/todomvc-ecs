@@ -85,11 +85,23 @@
 
 
 
+    // todo-item complexity - hide back into a controller?
+    
+    function bind_events($gui_li) {
+        ($gui_li)
+            .on('change', '.toggle', toggle)
+            .on('dblclick', 'label', editingMode)
+            .on('keyup', '.edit', editKeyup)
+            .on('focusout', '.edit', update)
+            .on('click', '.destroy', destroy)
+    }
 
+    function toggle(event) {
+        event_to_component(event).completed = !event_to_component(event).completed
+        engine.tick()
+    }
 
-    // todo complexity - hide back into a controller?
-
-    function editingMode(event) {
+	function editingMode(event) {
         event_to_entity(event).setComponent('editingmode', {})
         engine.tick()
     }
@@ -107,22 +119,6 @@
             $(e.target).data('abort', true).blur();
         }
     }
-    
-    function toggle(event) {
-        let model = event_to_component(event)
-        model.completed = !model.completed
-        console.log(model)
-        engine.tick()
-    }
-
-    function bind_events($gui_li) {
-        ($gui_li)
-            .on('change', '.toggle', toggle)
-            .on('dblclick', 'label', editingMode)
-            .on('keyup', '.edit', editKeyup)
-            .on('focusout', '.edit', update)
-            .on('click', '.destroy', destroy)
-    }
 
     function update(event) {
         event_to_entity(event).setComponent('editingmode-off', {})
@@ -130,15 +126,9 @@
     }
     
     function destroy(event) {
-        let data = event_to_component(event)
-        destroy_todoitem(data.id)
+        destroy_todoitem(event_to_component(event).id)
         engine.tick()
     }
-
-
-
-
-
 
 
 
