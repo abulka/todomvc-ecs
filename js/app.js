@@ -31,18 +31,32 @@
 
     // App vars etc.
 
+    class MarkAllComplete {
+        constructor() {
+            this.active = false
+            this._state = undefined
+        }
+        set state(bool) {
+            this.active = true
+            this._state = bool
+        }
+        get state() {
+            return this._state
+        }
+        reset() {
+            this.active = false
+        }        
+    }
+    let markAllComplete = new MarkAllComplete()
     let todoCount = 0
     let activeTodoCount = 0
     let app_filter = 'all'
 
-    let markAllComplete = {active: false, state: undefined}
-    function setMarkAllComplete(state) {
-        markAllComplete.active = true
-        markAllComplete.state = state
-    }
-    function resetMarkAllComplete() {
-        markAllComplete.active = false
-    }
+    // not really usefule making this an entity, as there is no processing
+    // we can do of anything in a system
+    // let mark_complete = engine.entity('mark-complete')
+    // mark_complete.setComponent('markall-data', {active: false, state: undefined})
+
 
     // Systems
 
@@ -73,7 +87,7 @@
     const $todolist = $('ul.todo-list')
     engine.system('controller-todoitem', ['data'], (entity, { data }) => {
 
-        resetMarkAllComplete()  // reset previous system data - Hmmm - this should be done with a post system event? but nothing like this exists
+        markAllComplete.reset()  // reset previous system data - Hmmm - this should be done with a post system event? but nothing like this exists
 
         function event_to_entity(event) {
             let id = $(event.target).closest("li").data("id")
@@ -254,7 +268,7 @@
             // this.app.todos.forEach(function (todo) {
             // 	todo.completed = isChecked;
             // });
-            setMarkAllComplete(isChecked)  // a System will be used to loop through
+            markAllComplete.state = isChecked  // a System will be used to loop through
             engine.tick()
         }
     }
