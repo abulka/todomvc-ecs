@@ -25,10 +25,25 @@
         entity.setComponent('data', {title,  completed, id})
         return entity
     }
+    
+    function id_to_entity(id) {
+        return engine.getEntity(`todoitem-${id}`)
+    }
+
+    function destroy_todoitem(id) {
+        let todoitem = id_to_entity(id)
+        let data = todoitem.getComponent('data')
+        console.log(`destroying todoitem '${data.title}'`)
+        
+        // _delete_gui(data.id)
+        $(`li[data-id=${id}]`).remove()  // yuk - GUI knowledge in the wrong place
+
+        engine.removeEntity(`todoitem-${data.id}`)
+    }
 
     // App vars etc.
 
-    class MarkAllComplete {
+    class MarkAll {
         constructor() {
             this.active = false
             this._state = undefined
@@ -48,7 +63,8 @@
 
     // let todos = [] // no need for explicit collection - the ECS will do it for us!
     let app_filter = 'all'
-    let markAllComplete = new MarkAllComplete()
+    let mark_all = new MarkAll()
+    let destroy_completed = false
     let todoCount = 0
     let activeTodoCount = 0
 
@@ -62,19 +78,27 @@
     // Systems
 
     engine.system('mark-all-complete', ['data'], (entity, { data }) => {
-        if (markAllComplete.active) {
-            console.assert(markAllComplete.state != undefined)
-            data.completed = markAllComplete.state
+        if (mark_all.active) {
+            console.assert(mark_all.state != undefined)
+            data.completed = mark_all.state
             console.log(`mark-all-complete: ${entity.name}, ${JSON.stringify(data)}`);
         }
     });
 
-    engine.system('housekeeping-reset-counts', ['housekeeping'], (entity, { housekeeping }) => {
-        console.log(`housekeeping-reset-counts (BEGIN): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(markAllComplete)}`);
-        markAllComplete.reset()
+    engine.system('destroy_completed', ['data'], (entity, { data }) => {
+        if (destroy_completed && data.completed) {
+            console.log(`destroy_completed: ${entity.name}, ${JSON.stringify(data)}`);
+            destroy_todoitem(data.id)
+        }
+    });
+
+    engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
+        console.log(`housekeeping-resets (BEGIN): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(mark_all)}, destroy_completed=${destroy_completed}`)
+        mark_all.reset()
+        destroy_completed = false
         todoCount = 0
         activeTodoCount = 0
-        console.log(`housekeeping-reset-counts (END): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(markAllComplete)}`);
+        console.log(`housekeeping-resets (END): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(mark_all)}, destroy_completed=${destroy_completed}`)
     });
 
     engine.system('counting', ['data'], (entity, { data }) => {
@@ -87,7 +111,7 @@
     engine.system('controller-todoitem', ['data'], (entity, { data }) => {
         function event_to_entity(event) {
             let id = $(event.target).closest("li").data("id")
-            return engine.getEntity(`todoitem-${id}`)
+            return id_to_entity(id)
         }
 
         function event_to_component(event) {
@@ -152,9 +176,11 @@
         
         function destroy(event) {
             let data = event_to_component(event)
-            console.log(`controller for '${data.title}' got DELETE user event from GUI ***`)
-            _delete_gui(data.id)
-            engine.removeEntity(`todoitem-${data.id}`)
+            destroy_todoitem(data.id)
+            
+            // console.log(`controller for '${data.title}' got DELETE user event from GUI ***`)
+            // _delete_gui(data.id)
+            // engine.removeEntity(`todoitem-${data.id}`)
             engine.tick()
         }
 
@@ -178,10 +204,10 @@
             return $(`li[data-id=${id}]`)
         }
 
-        function _delete_gui(id) {
-            // delete the GUI element
-            $(`li[data-id=${id}]`).remove()
-        }
+        // function _delete_gui(id) {
+        //     // delete the GUI element
+        //     $(`li[data-id=${id}]`).remove()
+        // }
 
         function build() {
             let li = todoTemplate(data);
@@ -243,7 +269,7 @@
         toggleAll(e) {
             // The 'mark-all-complete' System will be used to loop through all entities and marking them as completed or
             // not, rather than explictly looping here - interesting.
-            markAllComplete.state = $(e.target).prop('checked')
+            mark_all.state = $(e.target).prop('checked')
             engine.tick()
         }
     }
@@ -265,8 +291,9 @@
         }
     
         destroyCompleted(e) {
-            //this.app.destroyCompleted()  // TODO
-            console.log('not implemented yet')
+            // The 'destroy-completed' System will be used to loop rather than explicitly looping here
+            destroy_completed = true
+            engine.tick()
         }
     
         filter_click(e) {
