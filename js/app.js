@@ -14,6 +14,22 @@
         return a === b ? options.fn(this) : options.inverse(this);
     });
     
+    // Util 
+
+    function id_to_entity(id) {
+        return engine.getEntity(`todoitem-${id}`)
+    }
+
+    function event_to_entity(event) {
+        let id = $(event.target).closest("li").data("id")
+        return id_to_entity(id)
+    }
+
+    function event_to_component(event) {
+        let id = $(event.target).closest("li").data("id")
+        return event_to_entity(event).getComponent('data')
+    }
+
     // Declare entities - this is like the model, but without data - we attach that later, as 'components'
     function create_todoitem(title, completed, id) {
         if (id == undefined)
@@ -25,11 +41,7 @@
         entity.setComponent('data', {title,  completed, id})
         return entity
     }
-    
-    function id_to_entity(id) {
-        return engine.getEntity(`todoitem-${id}`)
-    }
-
+          
     function destroy_todoitem(id) {
         // just mark it and keep gui knowledge out of here!
         let todoitem = id_to_entity(id)
@@ -69,6 +81,80 @@
     // for the use of the 'controller-todoitem' system
     const todoTemplate = Handlebars.compile($('#todo-template').html());
     const $todolist = $('ul.todo-list')
+
+
+
+
+
+    // todo complexity - hide back into a controller?
+
+    function editingMode(event) {
+        let $input = $(event.target).closest('li').addClass('editing').find('.edit');
+        // puts caret at end of input
+        $input.val('');
+        let model = event_to_component(event)
+        $input.val(model.title)  // sets the correct initial value
+        $input.focus();
+    }
+
+    function editKeyup(e) {
+        if (e.which === ENTER_KEY) {
+            e.target.blur();
+        }
+
+        if (e.which === ESCAPE_KEY) {
+            $(e.target).data('abort', true).blur();
+        }
+    }
+
+    function toggle(event) {
+        let model = event_to_component(event)
+        model.completed = !model.completed
+        console.log(model)
+        engine.tick()
+    }
+
+    function bind_events($gui_li) {
+        ($gui_li)
+            .on('change', '.toggle', toggle)
+            .on('dblclick', 'label', editingMode)
+            .on('keyup', '.edit', editKeyup)
+            .on('focusout', '.edit', update)
+            .on('click', '.destroy', destroy)
+    }
+
+    function update(e) {
+        var el = e.target;
+        var $el = $(el);
+        var val = $el.val().trim();
+
+        if ($el.data('abort')) {
+            $el.data('abort', false);
+        } else if (!val) {
+            destroy(e);
+            return;
+        } else {
+            let model = event_to_component(event)
+            model.title = val
+            console.log(model)
+        }
+
+        $(e.target).closest('li').removeClass('editing')
+        engine.tick()
+    }
+    
+    function destroy(event) {
+        let data = event_to_component(event)
+        destroy_todoitem(data.id)
+        engine.tick()
+    }
+
+
+
+
+
+
+
 
     // Systems
 
@@ -110,133 +196,45 @@
         console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
     });
 
-    engine.system('controller-todoitem', ['data'], (entity, { data }) => {
-        function event_to_entity(event) {
-            let id = $(event.target).closest("li").data("id")
-            return id_to_entity(id)
+    engine.system('think-todoitem', ['data'], (entity, { data }) => {
+        if ($(`li[data-id=${data.id}]`).length == 0) {  // gui li doesn't exist
+            entity.setComponent('action', 'insert')
         }
-
-        function event_to_component(event) {
-            let id = $(event.target).closest("li").data("id")
-            return event_to_entity(event).getComponent('data')
-        }
-
-        function editingMode(event) {
-            let $input = $(event.target).closest('li').addClass('editing').find('.edit');
-            // puts caret at end of input
-            $input.val('');
-            let model = event_to_component(event)
-            $input.val(model.title)  // sets the correct initial value
-            $input.focus();
-        }
-
-        function editKeyup(e) {
-            if (e.which === ENTER_KEY) {
-                e.target.blur();
-            }
-    
-            if (e.which === ESCAPE_KEY) {
-                $(e.target).data('abort', true).blur();
-            }
-        }
-    
-        function toggle(event) {
-            let model = event_to_component(event)
-            model.completed = !model.completed
-            console.log(model)
-            engine.tick()
-        }
-
-        function bind_events($gui_li) {
-            ($gui_li)
-                .on('change', '.toggle', toggle)
-                .on('dblclick', 'label', editingMode)
-                .on('keyup', '.edit', editKeyup)
-                .on('focusout', '.edit', update)
-                .on('click', '.destroy', destroy)
-        }
-
-        function update(e) {
-            var el = e.target;
-            var $el = $(el);
-            var val = $el.val().trim();
-    
-            if ($el.data('abort')) {
-                $el.data('abort', false);
-            } else if (!val) {
-                destroy(e);
-                return;
-            } else {
-                let model = event_to_component(event)
-                model.title = val
-                console.log(model)
-            }
-    
-            $(e.target).closest('li').removeClass('editing')
-            engine.tick()
-        }
-        
-        function destroy(event) {
-            let data = event_to_component(event)
-            destroy_todoitem(data.id)
-            engine.tick()
-        }
-
-        function _insert_gui(li, id) {
-            // inserts or replaces li in 'ul.todo-list', returns the new $(li)
-            let $existing_li = $(`li[data-id=${id}]`)
-            if ($existing_li.length == 1)
-                $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
-            else if ($todolist.find('li').length == 0)
-                $todolist.append($(li))  // create initial li
-            else
-                $(li).insertAfter($todolist.find('li').last())  // append after last li
-            return $(`li[data-id=${id}]`)
-        }
-
-        function build() {
-            let li = todoTemplate(data);
-            let $res = _insert_gui(li, data.id);
-            bind_events($res);
-        }
-        
-        if ($(`li[data-id=${data.id}]`).length == 0) {  // only build if it doesn't exist
-            build()
-            console.log('build', data)
-        }
-        else {  // efficiently update instead
-            // _update_gui(data)
+        else {
             entity.setComponent('action', 'update')
-            // console.log('update', data)
         }
-
-        console.log(`controller-todoitem: ${JSON.stringify(data)}`);
+        console.log(`think-todoitem: ${JSON.stringify(data)}, action=${entity.getComponent('action')}`);
     });
 
     engine.system('controller-update-todoitem', ['data', 'action'], (entity, components) => {
-        console.log(`controller-update-todoitem: ${JSON.stringify(components)}`);
-        let data = components.data
         if (components.action == 'update') {
+            let data = components.data
             let $existing_li = $(`li[data-id=${data.id}]`)
+
+            // let li = todoTemplate(data);
+            // $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
+
             $existing_li.toggleClass("completed", data.completed)
             $existing_li.find('input.toggle').prop('checked', data.completed)
             $existing_li.find('label').text(data.title)
+
+            console.log(`controller-update-todoitem: ${JSON.stringify(components)}`);
+            components.action = ''
         }
-        // else
-        // else if (gui.insert) {
-        //     function _insert_gui(li, id) {
-        //         // inserts or replaces li in 'ul.todo-list', returns the new $(li)
-        //         let $existing_li = $(`li[data-id=${id}]`)
-        //         if ($existing_li.length == 1)
-        //             $existing_li.replaceWith(li)  // replace existing li - deprecated since we do more efficient updates now!
-        //         else if ($todolist.find('li').length == 0)
-        //             $todolist.append($(li))  // create initial li
-        //         else
-        //             $(li).insertAfter($todolist.find('li').last())  // append after last li
-        //         return $(`li[data-id=${id}]`)
-        //     }            
-        // }
-        components.action = ''
+    });
+
+    engine.system('controller-insert-todoitem', ['data', 'action'], (entity, components) => {
+        if (components.action == 'insert') {
+            let data = components.data
+            let li = todoTemplate(data);
+            if ($todolist.find('li').length == 0)
+                $todolist.append($(li))  // create initial li when todo gui list is empty
+            else
+                $(li).insertAfter($todolist.find('li').last())  // append after last li
+            bind_events($(`li[data-id=${data.id}]`));
+            console.log(`controller-insert-todoitem: ${JSON.stringify(components)}`);
+            components.action = ''
+        }
     });
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
