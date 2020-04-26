@@ -84,72 +84,37 @@
     const $todolist = $('ul.todo-list')
 
 
-
-    // todo-item complexity - hide back into a controller?
+    // GUI todo-item events
     
     function bind_events($gui_li) {
         ($gui_li)
-            .on('change', '.toggle', toggle)
-            .on('dblclick', 'label', editingMode)
-            .on('keyup', '.edit', editKeyup)
-            .on('focusout', '.edit', update)
-            .on('click', '.destroy', destroy)
+            .on('change', '.toggle', function(event) {
+				event_to_component(event).completed = !event_to_component(event).completed
+				engine.tick()
+			})
+            .on('dblclick', 'label', function(event) {
+				event_to_entity(event).setComponent('editingmode', {})
+				engine.tick()
+			})
+            .on('keyup', '.edit', function(event) {
+				// P.S. this fails to work as a System - infinite loop bt KEYUP and FOCUSOUT ?  Thus leave as is.
+				if (event.which === ENTER_KEY)
+					event.target.blur()
+				if (event.which === ESCAPE_KEY)
+					$(event.target).data('abort', true).blur()
+			})
+            .on('focusout', '.edit', function(event) {
+				event_to_entity(event).setComponent('editingmode-off', {})
+				engine.tick()
+			})
+            .on('click', '.destroy', function(event) {
+				destroy_todoitem(event_to_component(event).id)
+				engine.tick()
+			})
     }
-
-    function toggle(event) {
-        event_to_component(event).completed = !event_to_component(event).completed
-        engine.tick()
-    }
-
-	function editingMode(event) {
-        event_to_entity(event).setComponent('editingmode', {})
-        engine.tick()
-    }
-
-    function editKeyup(e) {
-
-        // event_to_entity(event).setComponent('editKeyup', {e})
-        // engine.tick()
-
-        if (e.which === ENTER_KEY) {
-            e.target.blur();
-        }
-
-        if (e.which === ESCAPE_KEY) {
-            $(e.target).data('abort', true).blur();
-        }
-    }
-
-    function update(event) {
-        event_to_entity(event).setComponent('editingmode-off', {})
-        engine.tick()
-    }
-    
-    function destroy(event) {
-        destroy_todoitem(event_to_component(event).id)
-        engine.tick()
-    }
-
 
 
     // Systems
-
-    // THIS DOES NOT DO WELL AS A SYSTEM - INFINITE LOOPS? BETWEEN 
-    // KEYUP AND FOCUSOUT
-    //
-    // engine.system('editKeyup', ['data', 'editKeyup'], (entity, {data, editKeyup}) => {
-    //     let e = editKeyup.e
-
-    //     if (e.which === ENTER_KEY) {
-    //         console.log('editKeyup ENTER_KEY', e, e.which)
-    //         e.target.blur();
-    //     }
-
-    //     if (e.which === ESCAPE_KEY) {
-    //         console.log('editKeyup ESCAPE_KEY', e, e.which)
-    //         $(e.target).data('abort', true).blur();
-    //     }
-    // });
 
      engine.system('mark-all-complete', ['data'], (entity, { data }) => {
         if (mark_all.active) {
