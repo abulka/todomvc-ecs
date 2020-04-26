@@ -179,10 +179,6 @@
         function destroy(event) {
             let data = event_to_component(event)
             destroy_todoitem(data.id)
-            
-            // console.log(`controller for '${data.title}' got DELETE user event from GUI ***`)
-            // _delete_gui(data.id)
-            // engine.removeEntity(`todoitem-${data.id}`)
             engine.tick()
         }
 
@@ -205,11 +201,6 @@
                 $(li).insertAfter($todolist.find('li').last())  // append after last li
             return $(`li[data-id=${id}]`)
         }
-
-        // function _delete_gui(id) {
-        //     // delete the GUI element
-        //     $(`li[data-id=${id}]`).remove()
-        // }
 
         function build() {
             let li = todoTemplate(data);
