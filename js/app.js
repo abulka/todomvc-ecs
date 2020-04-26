@@ -45,7 +45,7 @@
     function destroy_todoitem(id) {
         // just mark it and keep gui knowledge out of here!
         let todoitem = id_to_entity(id)
-        todoitem.setComponent('deleted', {})  // this component just acts like a flag
+        todoitem.setComponent('action', 'destroy')
     }
 
     // App vars etc.
@@ -173,11 +173,14 @@
         }
     });
 
-    engine.system('controller-delete', ['data', 'deleted'], (entity, { data, _ }) => {
-        // only todo items with the 'deleted' component will be looped through here
-        $(`li[data-id=${data.id}]`).remove()
-        engine.removeEntity(`todoitem-${data.id}`)
-        console.log(`controller-delete '${data.title}'`)
+    engine.system('controller-destroy', ['data', 'action'], (entity, components) => {
+        if (components.action == 'destroy') {
+            let data = components.data
+            $(`li[data-id=${data.id}]`).remove()
+            engine.removeEntity(`todoitem-${data.id}`)
+            console.log(`controller-destroy '${data.title}'`)
+            components.action = ''
+        }
     });
 
     engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
