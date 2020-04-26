@@ -182,14 +182,6 @@
             engine.tick()
         }
 
-        function _update_gui(data) {
-            // a bit laborious - easier to replace entire li, but this is more efficient, no rebinding needed either
-            let $existing_li = $(`li[data-id=${data.id}]`)
-            $existing_li.toggleClass("completed", data.completed)
-            $existing_li.find('input.toggle').prop('checked', data.completed)
-            $existing_li.find('label').text(data.title)
-        }
-
         function _insert_gui(li, id) {
             // inserts or replaces li in 'ul.todo-list', returns the new $(li)
             let $existing_li = $(`li[data-id=${id}]`)
@@ -213,12 +205,23 @@
             console.log('build', data)
         }
         else {  // efficiently update instead
-            _update_gui(data)
+            // _update_gui(data)
+            entity.setComponent('update', {})
             console.log('update', data)
         }
 
         console.log(`controller-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
     });
+
+    engine.system('controller-update-todoitem', ['data', 'update'], (entity, { data, _ }) => {
+        let $existing_li = $(`li[data-id=${data.id}]`)
+        $existing_li.toggleClass("completed", data.completed)
+        $existing_li.find('input.toggle').prop('checked', data.completed)
+        $existing_li.find('label').text(data.title)
+        entity.deleteComponent('update')  // TODO could have permanent action component?
+        console.log(`controller-update-todoitem: ${entity.name}, ${JSON.stringify(data)}`);
+    });
+
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
         let $el = $(`li[data-id=${data.id}]`)
