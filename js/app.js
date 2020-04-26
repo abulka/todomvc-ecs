@@ -95,6 +95,10 @@
     }
 
     function editKeyup(e) {
+
+        // event_to_entity(event).setComponent('editKeyup', {e})
+        // engine.tick()
+
         if (e.which === ENTER_KEY) {
             e.target.blur();
         }
@@ -103,7 +107,7 @@
             $(e.target).data('abort', true).blur();
         }
     }
-
+    
     function toggle(event) {
         let model = event_to_component(event)
         model.completed = !model.completed
@@ -140,7 +144,24 @@
 
     // Systems
 
-    engine.system('mark-all-complete', ['data'], (entity, { data }) => {
+    // THIS DOES NOT DO WELL AS A SYSTEM - INFINITE LOOPS? BETWEEN 
+    // KEYUP AND FOCUSOUT
+    //
+    // engine.system('editKeyup', ['data', 'editKeyup'], (entity, {data, editKeyup}) => {
+    //     let e = editKeyup.e
+
+    //     if (e.which === ENTER_KEY) {
+    //         console.log('editKeyup ENTER_KEY', e, e.which)
+    //         e.target.blur();
+    //     }
+
+    //     if (e.which === ESCAPE_KEY) {
+    //         console.log('editKeyup ESCAPE_KEY', e, e.which)
+    //         $(e.target).data('abort', true).blur();
+    //     }
+    // });
+
+     engine.system('mark-all-complete', ['data'], (entity, { data }) => {
         if (mark_all.active) {
             console.assert(mark_all.state != undefined)
             data.completed = mark_all.state
@@ -254,7 +275,6 @@
             $el.show()
     });
 
- 
 
 
 
