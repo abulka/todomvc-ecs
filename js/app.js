@@ -311,20 +311,23 @@
     const controller_footer = new ControllerFooter()
     
 
+    class Persistence {
+        constructor() {
+            this.todos_data = []  // gather this list for persistence purposes, array of pure data dicts
 
-
-    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
-    engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
-        todos_data = []
-    });
-    engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
-        todos_data.push(data)
-    });
-    engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
-        util.store('todos-oo', todos_data)
-        console.log('saved', JSON.stringify(todos_data))
-    });
-    
+            engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
+                this.todos_data = []
+            });
+            engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
+                this.todos_data.push(data)
+            });
+            engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
+                util.store('todos-oo', this.todos_data)
+                console.log('saved', JSON.stringify(this.todos_data))
+            });
+        }
+    }
+    new Persistence()
 
 
     class ControllerDebug {
