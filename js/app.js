@@ -76,10 +76,10 @@
 
     // Flags for controlling Systems
     let system = {
-        destroy_completed: false,
+        destroy_completed_todos: false,
+        mark_all_as_completed_todos: new MarkAll(),
     }
 
-    let mark_all = new MarkAll()
     let todoCount = 0
     let activeTodoCount = 0
 
@@ -123,17 +123,16 @@
 
     // Systems
 
-    engine.system('mark-all-complete', ['data'], (entity, { data }) => {
-        if (mark_all.active) {
-            console.assert(mark_all.state != undefined)
-            data.completed = mark_all.state
-            console.log(`mark-all-complete: ${JSON.stringify(data)}`);
+    engine.system('mark-all-todos-as-complete', ['data'], (entity, { data }) => {
+        if (system.mark_all_as_completed_todos.active) {
+            data.completed = system.mark_all_as_completed_todos.state
+            console.log(`mark-all-todos-as-complete: ${JSON.stringify(data)}`);
         }
     });
 
-    engine.system('destroy_completed', ['data'], (entity, { data }) => {
-        if (system.destroy_completed && data.completed) {
-            console.log(`destroy_completed: ${JSON.stringify(data)}`);
+    engine.system('destroy-completed-todos', ['data'], (entity, { data }) => {
+        if (system.destroy_completed_todos && data.completed) {
+            console.log(`destroy-completed-todos: ${JSON.stringify(data)}`);
             destroy_todoitem(data.id)
         }
     });
@@ -149,15 +148,15 @@
         function report() { 
             return `todoCount=${todoCount} ` + 
                    `activeTodoCount=${activeTodoCount} ` + 
-                   `markAllComplete=${JSON.stringify(mark_all)}, ` +
-                   `destroy_completed=${system.destroy_completed}`
+                   `app flags=${JSON.stringify(app)}, ` +
+                   `system flags=${JSON.stringify(system)}`
         }
-        console.log(`housekeeping-resets (BEGIN): ${report()}`)
-        mark_all.reset()
-        system.destroy_completed = false
+        console.log(`housekeeping-resets (before): ${report()}`)
+        system.mark_all_as_completed_todos.reset()
+        system.destroy_completed_todos = false
         todoCount = 0
         activeTodoCount = 0
-        console.log(`housekeeping-resets (END): ${report()}`)
+        console.log(`housekeeping-resets (after): ${report()}`)
     });
 
     engine.system('counting', ['data'], (entity, { data }) => {
@@ -277,7 +276,7 @@
         toggleAll(e) {
             // The 'mark-all-complete' System will be used to loop through all entities and marking them as completed or
             // not, rather than explictly looping here - interesting.
-            mark_all.state = $(e.target).prop('checked')
+            system.mark_all_as_completed_todos.state = $(e.target).prop('checked')
             engine.tick()
         }
     }
@@ -300,7 +299,7 @@
     
         destroyCompleted(e) {
             // The 'destroy-completed' System will be used to loop rather than explicitly looping here
-            system.destroy_completed = true
+            system.destroy_completed_todos = true
             engine.tick()
         }
     
@@ -400,7 +399,7 @@
 
         dump() {
             if (this.display) {
-                this.log(JSON.stringify({filter:app.filter, todos:this.todos, mark_all} , null, 2))
+                this.log(JSON.stringify({app, system, todos:this.todos} , null, 2))
             }            
         }
     }
