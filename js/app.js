@@ -310,31 +310,8 @@
     }
     const controller_footer = new ControllerFooter()
     
-    let $debug_toggle_checkbox = $('input[name="debug"]')
-    let $debug_verbose_toggle_checkbox = $('input[name="debug_verbose"]')
-    let debug_pre_output = document.querySelector('pre.debug')
-    let $debug_area = $('#debug_area')
-    let $debug_verbose = $('#debug_verbose')
-    class DebugDump {
-        constructor() {
-            // Gui events
-            $debug_toggle_checkbox.on('change', (event) => { this.display_debug_info(event) })
-            $debug_verbose_toggle_checkbox.on('change', (event) => { engine.tick() })
-    
-            // Internal events
-            document.addEventListener("notify all called", (event) => { this.notify(event) })
-        }
 
-        log(...txt) {
-            debug_pre_output.textContent = `${txt.join("\n")}\n`
-        }
-    
-        display_debug_info(event) {
-            $debug_area.toggleClass("invisible")
-            $debug_verbose.toggleClass("invisible")
-        }
-    }
-    let debug_dump = new DebugDump()
+
 
     let todos = []  // gather this list for temporary debug purposes
     let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
@@ -347,13 +324,58 @@
         todos.push(entity)
         todos_data.push(data)
     });
+    
+    
+
+
+    class ControllerDebug {
+        constructor() {
+            this.display = false
+            this.verbose = false
+
+            this.$cb_display = $('input[name="debug"]')
+            this.$cb_verbose = $('input[name="debug_verbose"]')
+            this.$area = $('#debug_area')
+            this.$area_verbose = $('#debug_verbose')
+            this.pre_output = document.querySelector('pre.debug')
+
+            // Gui events
+            this.$cb_display.on('change', (event) => { this.on_display(event) })
+            this.$cb_verbose.on('change', (event) => { this.on_verbose(event) })
+        }
+
+        log(...txt) {
+            this.pre_output.textContent = `${txt.join("\n")}\n`
+        }
+    
+        on_display(event) {
+            this.$area.toggleClass("invisible")
+            this.$area_verbose.toggleClass("invisible")
+            this.display = this.$cb_display.prop('checked')
+            engine.tick()
+        }
+
+        on_verbose(event) {
+            this.verbose = this.$cb_verbose.prop('checked')
+            engine.tick()
+        }
+
+        dump() {
+            if (this.display) {
+                let todos_to_display = this.verbose ? todos : todos_data
+                this.log(JSON.stringify({app_filter, todos: todos_to_display, mark_all} , null, 2))
+            }            
+        }
+    }
+    let controller_debug = new ControllerDebug()
+
+
 
     // util.store('todos-oo', this.as_array())
 
     engine.on('tick:after', (engine) => {
         controller_footer.renderFooter()
-        let todos_to_display = $debug_verbose_toggle_checkbox.prop('checked') ? todos : todos_data
-        debug_dump.log(JSON.stringify({app_filter, todos: todos_to_display, mark_all} , null, 2))
+        controller_debug.dump()
     })
     
     // Boot
