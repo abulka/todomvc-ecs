@@ -49,8 +49,7 @@
         todoitem.setComponent('destroy', {})
     }
 
-    // App vars etc.
-
+    // When 'active', use the boolean 'state' to do something or set some value
     class MarkAll {
         constructor() {
             this.active = false
@@ -82,8 +81,8 @@
         mark_all_as_completed_todos: new MarkAll(),
     }
 
-
-    let step = engine.entity('housekeeping-step')
+    // Create a single entity we can use whenever we want a system to run once, for housekeeping tasks
+    let step = engine.entity('single-step')
     step.setComponent('housekeeping', {})
 
     // for the use of the 'controller-todoitem' system
