@@ -72,6 +72,8 @@
     // App state
     let app = {
         filter: 'all',
+        todoCount: 0,
+        activeTodoCount: 0,
     }
 
     // Flags for controlling Systems
@@ -80,8 +82,6 @@
         mark_all_as_completed_todos: new MarkAll(),
     }
 
-    let todoCount = 0
-    let activeTodoCount = 0
 
     let step = engine.entity('housekeeping-step')
     step.setComponent('housekeeping', {})
@@ -146,24 +146,22 @@
 
     engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
         function report() { 
-            return `todoCount=${todoCount} ` + 
-                   `activeTodoCount=${activeTodoCount} ` + 
-                   `app flags=${JSON.stringify(app)}, ` +
+            return `app flags=${JSON.stringify(app)}, ` +
                    `system flags=${JSON.stringify(system)}`
         }
         console.log(`housekeeping-resets (before): ${report()}`)
         system.mark_all_as_completed_todos.reset()
         system.destroy_completed_todos = false
-        todoCount = 0
-        activeTodoCount = 0
+        app.todoCount = 0
+        app.activeTodoCount = 0
         console.log(`housekeeping-resets (after): ${report()}`)
     });
 
     engine.system('counting', ['data'], (entity, { data }) => {
-        todoCount++
+        app.todoCount++
         if (!data.completed)
-            activeTodoCount++
-        console.log(`counting: todoCount=${todoCount} activeTodoCount=${activeTodoCount}`);
+            app.activeTodoCount++
+        console.log(`counting: todoCount=${app.todoCount} activeTodoCount=${app.activeTodoCount}`);
     });
 
     engine.system('editing-mode-on', ['data', 'editingmode'], (entity, {data, _}) => {
@@ -312,12 +310,12 @@
     
         renderFooter() {
             var template = this.footerTemplate({
-                activeTodoCount: activeTodoCount,
-                activeTodoWord: util.pluralize(activeTodoCount, 'item'),
-                completedTodos: todoCount - activeTodoCount,
+                activeTodoCount: app.activeTodoCount,
+                activeTodoWord: util.pluralize(app.activeTodoCount, 'item'),
+                completedTodos: app.todoCount - app.activeTodoCount,
                 filter: app.filter
             });
-            this.$footer_interactive_area.toggle(todoCount > 0).html(template);
+            this.$footer_interactive_area.toggle(app.todoCount > 0).html(template);
         }
     }
     const controller_footer = new ControllerFooter()
