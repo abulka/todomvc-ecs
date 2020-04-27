@@ -313,17 +313,17 @@
 
 
 
-    let todos = []  // gather this list for temporary debug purposes
-    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
-    engine.system('housekeeping-debug', ['housekeeping'], (entity, { housekeeping }) => {
-        todos = []
-        todos_data = []
-    });
+    // let todos = []  // gather this list for temporary debug purposes
+    // let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
+    // engine.system('housekeeping-debug', ['housekeeping'], (entity, { housekeeping }) => {
+    //     todos = []
+    //     todos_data = []
+    // });
 
-    engine.system('gather-todos-for-save-or-debug', ['data'], (entity, { data }) => {
-        todos.push(entity)
-        todos_data.push(data)
-    });
+    // engine.system('gather-todos-for-save-or-debug', ['data'], (entity, { data }) => {
+    //     todos.push(entity)
+    //     todos_data.push(data)
+    // });
     
     
 
@@ -332,6 +332,7 @@
         constructor() {
             this.display = false
             this.verbose = false
+            this.todos = []  // gather this list for temporary debug purposes, can be entities or just data components
 
             this.$cb_display = $('input[name="debug"]')
             this.$cb_verbose = $('input[name="debug_verbose"]')
@@ -342,6 +343,14 @@
             // Gui events
             this.$cb_display.on('change', (event) => { this.on_display(event) })
             this.$cb_verbose.on('change', (event) => { this.on_verbose(event) })
+
+            // Systems
+            engine.system('reset-todos', ['housekeeping'], (entity, { housekeeping }) => {
+                this.todos = []
+            })
+            engine.system('gather-todos', ['data'], (entity, { data }) => {
+                this.todos.push(this.verbose ? entity : data)
+            });            
         }
 
         log(...txt) {
@@ -362,8 +371,7 @@
 
         dump() {
             if (this.display) {
-                let todos_to_display = this.verbose ? todos : todos_data
-                this.log(JSON.stringify({app_filter, todos: todos_to_display, mark_all} , null, 2))
+                this.log(JSON.stringify({app_filter, todos:this.todos, mark_all} , null, 2))
             }            
         }
     }
