@@ -311,11 +311,15 @@
     const controller_footer = new ControllerFooter()
     
     let $debug_toggle_checkbox = $('input[name="debug"]')
+    let $debug_verbose_toggle_checkbox = $('input[name="debug_verbose"]')
     let debug_pre_output = document.querySelector('pre.debug')
+    let $debug_area = $('#debug_area')
+    let $debug_verbose = $('#debug_verbose')
     class DebugDump {
         constructor() {
             // Gui events
             $debug_toggle_checkbox.on('change', (event) => { this.display_debug_info(event) })
+            $debug_verbose_toggle_checkbox.on('change', (event) => { engine.tick() })
     
             // Internal events
             document.addEventListener("notify all called", (event) => { this.notify(event) })
@@ -326,23 +330,30 @@
         }
     
         display_debug_info(event) {
-            debug_pre_output.style.display = event.target.checked ? 'block' : 'none'
+            $debug_area.toggleClass("invisible")
+            $debug_verbose.toggleClass("invisible")
         }
     }
     let debug_dump = new DebugDump()
 
     let todos = []  // gather this list for temporary debug purposes
+    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
     engine.system('housekeeping-debug', ['housekeeping'], (entity, { housekeeping }) => {
         todos = []
+        todos_data = []
     });
 
-    engine.system('debug-dump', ['data'], (entity, { data }) => {
+    engine.system('gather-todos-for-save-or-debug', ['data'], (entity, { data }) => {
         todos.push(entity)
+        todos_data.push(data)
     });
+
+    // util.store('todos-oo', this.as_array())
 
     engine.on('tick:after', (engine) => {
         controller_footer.renderFooter()
-        debug_dump.log(JSON.stringify({app_filter, todos, mark_all} , null, 2))
+        let todos_to_display = $debug_verbose_toggle_checkbox.prop('checked') ? todos : todos_data
+        debug_dump.log(JSON.stringify({app_filter, todos: todos_to_display, mark_all} , null, 2))
     })
     
     // Boot

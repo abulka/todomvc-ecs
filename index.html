@@ -104,8 +104,11 @@
 
 		<!-- debug area -->
 		<label style="font-size: smaller; color: darkgray;"><input type="checkbox" name="debug" value="value" style="vertical-align:middle;">Debug</label>
-		<pre style="display: none;" class="debug">
-		</pre>
+		<label style="font-size: smaller; color: darkgray;" class="invisible" id="debug_verbose"><input type="checkbox" name="debug_verbose" value="value" style="vertical-align:middle;">Verbose</label>
+		<div id="debug_area" class="invisible">
+			<pre class="debug">
+			</pre>
+		</div>
 
 		<!-- Scripts here. Don't remove ↓ -->
 		<script src="node_modules/todomvc-common/base.js"></script>
