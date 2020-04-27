@@ -284,8 +284,13 @@
             this.$footer.on('click', '.clear-completed', this.destroyCompleted)
             this.$footer.on('click', 'ul', this.filter_click.bind(this))
     
-            // inject the proper footer, which contains name=
+            // initialisation, inject the proper footer, which contains name=
             this.renderFooter()
+
+            // this will happen every time
+            engine.system('render-footer', ['housekeeping'], (entity, { housekeeping }) => {
+                this.renderFooter()
+            })            
         }
     
         destroyCompleted(e) {
@@ -311,7 +316,7 @@
             this.$footer_interactive_area.toggle(app.todoCount > 0).html(template);
         }
     }
-    const controller_footer = new ControllerFooter()
+    new ControllerFooter()
     
 
     class Persistence {
@@ -396,10 +401,9 @@
     }
     new ControllerDebug()
 
-
-
+    // After each run of all Systems, extra commands can be added
     engine.on('tick:after', (engine) => {
-        controller_footer.renderFooter()
+        console.log('-'.repeat(40))
     })
     
     // Boot
