@@ -30,25 +30,6 @@
         return event_to_entity(event).getComponent('data')
     }
 
-    // Declare entities - this is like the model, but without data - we attach that later, as 'components'
-    
-    function create_todoitem(title, completed, id) {
-        if (id == undefined)
-            id = util.uuid()
-        if (completed == undefined)
-            completed = false
-        let entity_name = `todoitem-${id}`  // entity names must be unique in jecs
-        let entity = engine.entity(entity_name)
-        entity.setComponent('data', {title,  completed, id})
-        return entity
-    }
-          
-    function destroy_todoitem(id) {
-        // just mark it and keep gui knowledge out of here!
-        let todoitem = id_to_entity(id)
-        todoitem.setComponent('destroy', {})
-    }
-
     // When 'active', use the boolean 'state' to do something or set some value
     class MarkAll {
         constructor() {
@@ -90,35 +71,24 @@
     const $todolist = $('ul.todo-list')
 
 
-    // GUI todo-item events
-    
-    function bind_events($gui_li) {
-        ($gui_li)
-            .on('change', '.toggle', function(event) {
-                event_to_component(event).completed = !event_to_component(event).completed
-                engine.tick()
-            })
-            .on('dblclick', 'label', function(event) {
-                event_to_entity(event).setComponent('editingmode', {})
-                engine.tick()
-            })
-            .on('keyup', '.edit', function(event) {
-                // P.S. this fails to work as a System - infinite loop bt KEYUP and FOCUSOUT ?  Thus leave as is.
-                if (event.which === ENTER_KEY)
-                    event.target.blur()
-                if (event.which === ESCAPE_KEY)
-                    $(event.target).data('abort', true).blur()
-            })
-            .on('focusout', '.edit', function(event) {
-                event_to_entity(event).setComponent('editingmode-off', {})
-                engine.tick()
-            })
-            .on('click', '.destroy', function(event) {
-                destroy_todoitem(event_to_component(event).id)
-                engine.tick()
-            })
-    }
+    // Todo entity - create and destroy
 
+    function create_todoitem(title, completed, id) {
+        if (id == undefined)
+            id = util.uuid()
+        if (completed == undefined)
+            completed = false
+        let entity_name = `todoitem-${id}`  // entity names must be unique in jecs
+        let entity = engine.entity(entity_name)
+        entity.setComponent('data', {title,  completed, id})
+        return entity
+    }
+          
+    function destroy_todoitem(id) {
+        // just mark it and keep gui knowledge out of here!
+        let todoitem = id_to_entity(id)
+        todoitem.setComponent('destroy', {})
+    }
 
     // Systems
 
@@ -222,6 +192,31 @@
             $todolist.append($(li))  // create initial li when todo gui list is empty
         else
             $(li).insertAfter($todolist.find('li').last())  // append after last li
+
+            function bind_events($gui_li) {
+                ($gui_li)
+                    .on('change', '.toggle', function(event) {
+                        event_to_component(event).completed = !event_to_component(event).completed
+                        engine.tick()
+                    })
+                    .on('dblclick', 'label', function(event) {
+                        event_to_entity(event).setComponent('editingmode', {})
+                        engine.tick()
+                    })
+                    .on('keyup', '.edit', function(event) {
+                        if (event.which === ENTER_KEY) event.target.blur()
+                        if (event.which === ESCAPE_KEY) $(event.target).data('abort', true).blur()
+                    })
+                    .on('focusout', '.edit', function(event) {
+                        event_to_entity(event).setComponent('editingmode-off', {})
+                        engine.tick()
+                    })
+                    .on('click', '.destroy', function(event) {
+                        destroy_todoitem(event_to_component(event).id)
+                        engine.tick()
+                    })
+            }
+
         bind_events($(`li[data-id=${data.id}]`));
         console.log(`controller-insert-todoitem: ${JSON.stringify(data)}`);
         entity.deleteComponent('insert')
