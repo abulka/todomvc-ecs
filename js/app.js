@@ -69,10 +69,17 @@
         }        
     }
 
-    // let todos = [] // no need for explicit collection - the ECS will do it for us!
-    let app_filter = 'all'
+    // App state
+    let app = {
+        filter: 'all',
+    }
+
+    // Flags for controlling Systems
+    let system = {
+        destroy_completed: false,
+    }
+
     let mark_all = new MarkAll()
-    let destroy_completed = false
     let todoCount = 0
     let activeTodoCount = 0
 
@@ -116,7 +123,7 @@
 
     // Systems
 
-     engine.system('mark-all-complete', ['data'], (entity, { data }) => {
+    engine.system('mark-all-complete', ['data'], (entity, { data }) => {
         if (mark_all.active) {
             console.assert(mark_all.state != undefined)
             data.completed = mark_all.state
@@ -125,7 +132,7 @@
     });
 
     engine.system('destroy_completed', ['data'], (entity, { data }) => {
-        if (destroy_completed && data.completed) {
+        if (system.destroy_completed && data.completed) {
             console.log(`destroy_completed: ${JSON.stringify(data)}`);
             destroy_todoitem(data.id)
         }
@@ -139,12 +146,18 @@
     });
 
     engine.system('housekeeping-resets', ['housekeeping'], (entity, { housekeeping }) => {
-        console.log(`housekeeping-resets (BEGIN): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(mark_all)}, destroy_completed=${destroy_completed}`)
+        function report() { 
+            return `todoCount=${todoCount} ` + 
+                   `activeTodoCount=${activeTodoCount} ` + 
+                   `markAllComplete=${JSON.stringify(mark_all)}, ` +
+                   `destroy_completed=${system.destroy_completed}`
+        }
+        console.log(`housekeeping-resets (BEGIN): ${report()}`)
         mark_all.reset()
-        destroy_completed = false
+        system.destroy_completed = false
         todoCount = 0
         activeTodoCount = 0
-        console.log(`housekeeping-resets (END): todoCount=${todoCount} activeTodoCount=${activeTodoCount} markAllComplete=${JSON.stringify(mark_all)}, destroy_completed=${destroy_completed}`)
+        console.log(`housekeeping-resets (END): ${report()}`)
     });
 
     engine.system('counting', ['data'], (entity, { data }) => {
@@ -220,11 +233,11 @@
 
     engine.system('apply-filter', ['data'], (entity, { data }) => {
         let $el = $(`li[data-id=${data.id}]`)
-        if (app_filter == 'all')
+        if (app.filter == 'all')
             $el.show()
-        else if (app_filter == 'active' && data.completed)
+        else if (app.filter == 'active' && data.completed)
             $el.hide()
-        else if (app_filter == 'completed' && !data.completed)
+        else if (app.filter == 'completed' && !data.completed)
             $el.hide()
         else
             $el.show()
@@ -278,7 +291,7 @@
             this.footerTemplate = Handlebars.compile($('#footer-template').html());
               
             // Gui events
-            this.$footer.on('click', '.clear-completed', this.destroyCompleted.bind(this))
+            this.$footer.on('click', '.clear-completed', this.destroyCompleted)
             this.$footer.on('click', 'ul', this.filter_click.bind(this))
     
             // inject the proper footer, which contains name=
@@ -287,13 +300,13 @@
     
         destroyCompleted(e) {
             // The 'destroy-completed' System will be used to loop rather than explicitly looping here
-            destroy_completed = true
+            system.destroy_completed = true
             engine.tick()
         }
     
         filter_click(e) {
             var $el = $(e.target).closest('li');
-            app_filter = $el.find('a').attr("name")
+            app.filter = $el.find('a').attr("name")
             this.renderFooter()
             engine.tick()
         }
@@ -303,7 +316,7 @@
                 activeTodoCount: activeTodoCount,
                 activeTodoWord: util.pluralize(activeTodoCount, 'item'),
                 completedTodos: todoCount - activeTodoCount,
-                filter: app_filter
+                filter: app.filter
             });
             this.$footer_interactive_area.toggle(todoCount > 0).html(template);
         }
@@ -387,7 +400,7 @@
 
         dump() {
             if (this.display) {
-                this.log(JSON.stringify({app_filter, todos:this.todos, mark_all} , null, 2))
+                this.log(JSON.stringify({filter:app.filter, todos:this.todos, mark_all} , null, 2))
             }            
         }
     }
