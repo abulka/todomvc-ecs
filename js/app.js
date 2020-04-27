@@ -89,28 +89,28 @@
     function bind_events($gui_li) {
         ($gui_li)
             .on('change', '.toggle', function(event) {
-				event_to_component(event).completed = !event_to_component(event).completed
-				engine.tick()
-			})
+                event_to_component(event).completed = !event_to_component(event).completed
+                engine.tick()
+            })
             .on('dblclick', 'label', function(event) {
-				event_to_entity(event).setComponent('editingmode', {})
-				engine.tick()
-			})
+                event_to_entity(event).setComponent('editingmode', {})
+                engine.tick()
+            })
             .on('keyup', '.edit', function(event) {
-				// P.S. this fails to work as a System - infinite loop bt KEYUP and FOCUSOUT ?  Thus leave as is.
-				if (event.which === ENTER_KEY)
-					event.target.blur()
-				if (event.which === ESCAPE_KEY)
-					$(event.target).data('abort', true).blur()
-			})
+                // P.S. this fails to work as a System - infinite loop bt KEYUP and FOCUSOUT ?  Thus leave as is.
+                if (event.which === ENTER_KEY)
+                    event.target.blur()
+                if (event.which === ESCAPE_KEY)
+                    $(event.target).data('abort', true).blur()
+            })
             .on('focusout', '.edit', function(event) {
-				event_to_entity(event).setComponent('editingmode-off', {})
-				engine.tick()
-			})
+                event_to_entity(event).setComponent('editingmode-off', {})
+                engine.tick()
+            })
             .on('click', '.destroy', function(event) {
-				destroy_todoitem(event_to_component(event).id)
-				engine.tick()
-			})
+                destroy_todoitem(event_to_component(event).id)
+                engine.tick()
+            })
     }
 
 
@@ -310,8 +310,39 @@
     }
     const controller_footer = new ControllerFooter()
     
+    let $debug_toggle_checkbox = $('input[name="debug"]')
+    let debug_pre_output = document.querySelector('pre.debug')
+    class DebugDump {
+        constructor() {
+            // Gui events
+            $debug_toggle_checkbox.on('change', (event) => { this.display_debug_info(event) })
+    
+            // Internal events
+            document.addEventListener("notify all called", (event) => { this.notify(event) })
+        }
+
+        log(...txt) {
+            debug_pre_output.textContent = `${txt.join("\n")}\n`
+        }
+    
+        display_debug_info(event) {
+            debug_pre_output.style.display = event.target.checked ? 'block' : 'none'
+        }
+    }
+    let debug_dump = new DebugDump()
+
+    let todos = []  // gather this list for temporary debug purposes
+    engine.system('housekeeping-debug', ['housekeeping'], (entity, { housekeeping }) => {
+        todos = []
+    });
+
+    engine.system('debug-dump', ['data'], (entity, { data }) => {
+        todos.push(entity)
+    });
+
     engine.on('tick:after', (engine) => {
         controller_footer.renderFooter()
+        debug_dump.log(JSON.stringify({app_filter, todos, mark_all} , null, 2))
     })
     
     // Boot
