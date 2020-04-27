@@ -313,18 +313,17 @@
 
 
 
-    // let todos = []  // gather this list for temporary debug purposes
-    // let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
-    // engine.system('housekeeping-debug', ['housekeeping'], (entity, { housekeeping }) => {
-    //     todos = []
-    //     todos_data = []
-    // });
-
-    // engine.system('gather-todos-for-save-or-debug', ['data'], (entity, { data }) => {
-    //     todos.push(entity)
-    //     todos_data.push(data)
-    // });
-    
+    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
+    engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
+        todos_data = []
+    });
+    engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
+        todos_data.push(data)
+    });
+    engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
+        util.store('todos-oo', todos_data)
+        console.log('saved', JSON.stringify(todos_data))
+    });
     
 
 
@@ -350,7 +349,10 @@
             })
             engine.system('gather-todos', ['data'], (entity, { data }) => {
                 this.todos.push(this.verbose ? entity : data)
-            });            
+            })            
+            engine.system('dump', ['housekeeping'], (entity, { housekeeping }) => {
+                this.dump()
+            })
         }
 
         log(...txt) {
@@ -379,11 +381,8 @@
 
 
 
-    // util.store('todos-oo', this.as_array())
-
     engine.on('tick:after', (engine) => {
         controller_footer.renderFooter()
-        controller_debug.dump()
     })
     
     // Boot
