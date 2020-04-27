@@ -322,12 +322,23 @@
                 this.todos_data.push(data)
             });
             engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
-                util.store('todos-oo', this.todos_data)
-                console.log('saved', JSON.stringify(this.todos_data))
+                this.save()
             });
         }
+
+        save() {
+            util.store('todos-oo', this.todos_data)
+            console.log('saved', JSON.stringify(this.todos_data))
+        }
+
+        load() {
+            let todos_array = util.store('todos-oo')
+            todos_array.forEach(function (todo) {
+                create_todoitem(todo.title, todo.completed, todo.id)
+            }, this)
+        }        
     }
-    new Persistence()
+    let persistence = new Persistence()
 
 
     class ControllerDebug {
@@ -390,8 +401,9 @@
     
     // Boot
 
-    create_todoitem("A")
-    create_todoitem("B", true)
+    persistence.load()
+    // create_todoitem("A")
+    // create_todoitem("B", true)
     engine.tick()
 
 })(window);
