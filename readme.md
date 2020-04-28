@@ -1,19 +1,160 @@
-# TodoMVC App Template
+# Entity Component System • [TodoMVC](http://todomvc.com)
 
-> Template used for creating [TodoMVC](http://todomvc.com) apps
+The classic Javascript [TodoMVC app](https://github.com/tastejs/todomvc) implemented using an architecture typically used in gaming! The Entity Component System (ECS) radically rethinks how models, their data and behaviour is organised.
 
 ![](https://github.com/tastejs/todomvc-app-css/raw/master/screenshot.png)
 
+Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
-## Getting started
+---
 
-- Read the [Application Specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md) before touching the template.
+## ECS - Entity Component System Architectural Pattern
 
-- Delete this file and rename `app-readme.md` to `readme.md` and fill it out.
-
-- Clone this repo and install the dependencies with [npm](https://npmjs.com) by running: `npm install`.
+This project fully implements the TodoMVC specification. It is implemented using an Entity Component System framework, in this case [Jecs](https://www.npmjs.com/package/jecs).
 
 
-## License
+- Entity = like a model
+- Component = model data and associated attributes attached arbitrarily
+- System = behaviour incl. controller rendering to GUI
 
-<a rel="license" href="http://creativecommons.org/licenses/by/4.0/deed.en_US"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />This <span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" rel="dct:type">work</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http://sindresorhus.com" property="cc:attributionName" rel="cc:attributionURL">TasteJS</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/deed.en_US">Creative Commons Attribution 4.0 International License</a>.
+Declare entities - this is like the model, but without data - we attach that later, as 'components'
+
+# Gathering results whilst looping
+
+This is a key technique that I found I needed.
+
+## Ans. buffer intermediate results:
+
+```javascript
+  let welcome_user_render = {welcome, firstname, surname}  // create an empty object to buffer
+
+  engine.system('render-display', ['data', 'displayOptions'], (entity, {data, displayOptions}) => {
+    if (entity.name == 'model-welcome-message') {
+      // buffer intermediate result
+      welcome_user_render.welcome = displayOptions.upperright ? data.val.toUpperCase() : data.val
+    }
+  }
+...
+
+  engine.on('tick:after', (engine) => { 
+    // flush out pending renders from buffer
+    $('#welcome-user').html(`${welcome_user_render.welcome} ${welcome_user_render.firstname} ${welcome_user_render.surname} `)
+  })
+
+```
+
+Could leverage the ECS pipeline and rendering to do things in stages
+properly. Which then looks like:
+
+```javascript
+const topright = engine.entity('display-model-topright');
+topright.setComponent('renderData', { welcome:"", firstname:"", surname:"" })
+
+engine.system('render-display', ['data', 'displayOptions'], (entity, { data, displayOptions }) => {
+  topright.getComponent('renderData').welcome = 'blah'
+});
+
+engine.system('render-display-topright', ['renderData'], (entity, { renderData }) => {
+  $topright.html(`${renderData.welcome} ${renderData.firstname} ${renderData.surname} `)
+});
+```
+
+## Another example of buffering
+
+```javascript
+    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
+    engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
+        todos_data = []
+    });
+    engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
+        todos_data.push(data)
+    });
+    engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
+        util.store('todos-oo', todos_data)
+        console.log('saved', JSON.stringify(todos_data))
+    });
+```
+
+that last housekeeping step can be also be done as a `engine.on('tick:after', (engine) => { ` e.g.
+
+```javascript
+  engine.on('tick:after', (engine) => { 
+      util.store('todos-oo', todos_data)
+      console.log('saved', JSON.stringify(todos_data))
+  })
+```
+
+# Encapsulating Systems into classes
+
+Systems still work when created inside classes - they are registered with the engine and will run ok.
+
+```javascript
+class Persistence {
+    constructor() {
+        this.todos_data = []  // gather this list for persistence purposes, array of pure data dicts
+
+        engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
+            this.todos_data = []
+        });
+        engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
+            this.todos_data.push(data)
+        });
+        engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
+            this.save()
+        });
+
+        save() {
+            util.store('todos-oo', this.todos_data)
+            console.log('saved', JSON.stringify(this.todos_data))
+        }
+}
+new Persistence()
+```
+
+this is arguably nicer and more encapsulated.
+
+The only trick is that you need to instantiate the classes in the correct order, so that their Systems are created (via their constructors) at the appropriate point in the 'pipeline' of Systems.
+
+
+## TodoMVC-ECS
+
+This project fully implements the TodoMVC specification and is implemented using an ECS, as described above.
+
+Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
+
+<!-- ![mvc-a-architecture](https://raw.githubusercontent.com/abulka/todomvc-oo/master/docs_root/images/mvca-architecture-gituml.svg?sanitize=true) -->
+
+
+---
+
+### Resources
+
+- [GUI Showdown ECS](https://abulka.github.io/gui-showdown/main_ecs.html) another example of an app implemented using the MVCA architecture (Javascript, open source)
+- [GUI Showdown ECS in Python](https://github.com/abulka/gui-showdown) another example of an app implemented using the MVCA architecture (Python, open source)
+- Official [TodoMVC project](http://todomvc.com/) with other TodoMVC implementations (e.g. Vue, Angular, React etc.)
+- [GitUML](https://www.gituml.com) diagramming used for this project
+- [Literate Code Mapping](https://github.com/abulka/lcodemaps) diagramming used for this project
+
+<!-- - [Used by](https://github.com/abulka/todomvc-oo) -->
+<!-- - [Website](https://www.gituml.com/editz/134) -->
+<!-- - [Blog](https://www.gituml.com/editz/136) -->
+<!-- - [FAQ](https://www.gituml.com/editz/136) -->
+
+### Articles
+
+<!-- - [Medium article]()  (coming in Apr 2020) -->
+
+<!-- - [MGM](docs_root/mgm.md) pattern (older version of MVCA, presented at a Patterns Conference) -->
+
+- TodoECS - Entity Component System implementation of TodoMVC *(coming mid 2020)*
+
+<!-- ### Support
+
+- [Stack Overflow](http://stackoverflow.com/questions/tagged/MVCA)
+- [Twitter](http://twitter.com/unjazz) -->
+
+## Credit
+
+Created by [Andy Bulka](http://andypatterns.com)
+
+Note: This project is not not *officially* part of the [TodoMVC project](http://todomvc.com/) - as it is does not use a MVC framework library, nor does it meet the criterion of "having a community" around it.
