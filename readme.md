@@ -4,25 +4,113 @@ Is the [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_
 
 It turns out that the answer is yes! Whilst ECS is most commonly used in building games, it can also be used for building a traditional web "form" style application like TodoMVC. However you will need to radically rethink how models, their data and behaviour is organised. 
 
-This is arguably a refreshing, mind-blowing lesson in GUI programming!
+This is arguably a refreshing, mind-blowing lesson in GUI programming! 🤯😉
 
 
 ![](https://github.com/tastejs/todomvc-app-css/raw/master/screenshot.png)
 
-Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
+Live [TodoMVC-ECS demo](https://abulka.github.io/todomvc-ecs/index.html).
 
 ---
 
 ## ECS - Entity Component System Architectural Pattern
 
-This project fully implements the TodoMVC specification. It is implemented using an Entity Component System framework, in this case [Jecs](https://www.npmjs.com/package/jecs).
+The ECS (Entity Component System) architecture is the new hotness in game developer circles. Its a way of architecting your software that rejects Models as classes in favour of a more deconstructed, data driven approach. The results, in gaming apps at least, are massive reductions in complexity and huge increases in performance and maintainability.
 
+> When I read about ECS it got me thinking - why not use it for more traditional software, not just games?
 
-- Entity = like a model
-- Component = model data and associated attributes attached arbitrarily
-- System = behaviour incl. controller rendering to GUI
+You can read about Entity Systems in this [Wikipedia article](https://medium.com/r/?url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FEntity_component_system). The basic idea is to take the Object (that contains identity, data and behaviour) and 'deconstruct it'.
 
-Declare entities - this is like the model, but without data - we attach that later, as 'components'
+- Entity = like a model, but *has no data and no behaviour* 🤯 Entities are lightweight and dumb - just an id or name
+- Component = data
+- System = behaviour
+
+### The freedom to attach any Component to any Entity
+You now have the freedom to attach any Component to any Entity. But why bother? 
+
+You would think that a pure data Component like `Position {x:0, y:0}` is always closely tied with a specific Entity - so why break them apart? For example a `Ball` has a Position, a `Person` does not! What a `Person` entity surely needs instead is a `Name {firstname:'John', surname:'Smith'}` etc.
+
+Well, it turns out that the opposite is often true - entities like `Ball`, `Bullet`, `Car` all need `Position`. And in more business oriented applications, `Person`, `Employee`, `Manager` all need a `Name`. Thinking further along these lines, an `Address` is a useful data Component that many Entities would need, and having a single declaration of what an address is saves repeat declarations and errors. 
+
+If you think that using class inheritance can achieve the goal of declaring `Address` only once - you would be right. However most languages support only single inheritance, so good luck with forcing disparate inhertiance trees to inherit from a common Address class - that's a bit awkward. With languages that support multiple inheritance (e.g. Python), you will have more luck - in fact multiple inheritance comes closest to matching the idea of ECS, where you can arbitrarily compose a model entity from as many Component data aspects as you like.  
+
+You could also solve the problem through composition - a class could reference a common instance of `Address` and any other common classes it needs. This would also achieve the goal of declaring `Address` only once and providing 'mix and match' composability of Models, that ECS has.
+
+This freedom to decouple data from entities is very powerful, especially when we take the next and final step in understanding ECS - Systems.
+
+### Systems are like DOM/CSS Selectors
+
+Systems are where all the behaviour happens. 
+Systems are code blocks which run across subsets of matched Components. 
+
+I guess it comes from the gaming heritage, where there are many game objects to process: looping is central to ECS. If you have a for loop in your code you are probably doing it wrong. Systems magically iterate across entites that match certain Components e.g. all entities who have a Speed component and a Position component. Its like having a CSS selector and running a code block for all matches.
+
+### Choosing an ECS framework
+
+Entity Component System frameworks are relatively simple. They offer ways of defining Entities, adding Components (data objects) to those entity instances, and defining Systems which are code blocks which run across subsets of matched Components. 
+
+For this project I chose to use the javascript [Jecs](https://www.npmjs.com/package/jecs) library.
+
+## Example
+
+A traditional class Model of a `Todo` item would look like:
+
+```javascript
+class TodoItem {
+    constructor(title, completed, id) {
+        this.title = title
+        this.completed = completed
+        this.id = id == undefined ? util.uuid() : id
+    }
+    report() {
+        let is_or_is_not = this.completed ? 'is' : 'is not'
+        console.log(`Todo item ${this.title} ${is_or_is_not} completed`)
+    }
+}
+
+let todos = []
+todos.push(new TodoItem('make lunch', true))
+todos.push(new TodoItem('wash dishes', false))
+
+todos.forEach(function (todo) {
+    todo.report()
+})
+```
+
+which would generate:
+
+```
+$ node example.js 
+Todo item make lunch has id 1 and is completed
+Todo item wash dishes has id 2 and is not completed
+```
+
+wheras the ECS approach would look like this:
+
+```javascript
+const engine = new Engine();
+
+engine.entity(util.uuid()).setComponent('data', {title:'make lunch',  completed:true})
+engine.entity(util.uuid()).setComponent('data', {title:'wash dishes',  completed:false})
+
+engine.system('report', ['data'], (entity, { data }) => {
+    let is_or_is_not = data.completed ? 'is' : 'is not'
+    console.log(`Todo item ${data.title} has id ${entity.name} and ${is_or_is_not} completed`)
+});
+engine.tick()
+```
+
+Let's break this down:
+
+1. Creating an entity is just `engine.entity()`
+2. Give the entity some data fields with `entity.setComponent('data', {title,  completed, id})`. The name of this component happens to be `'data'` because I chose that name, but I could have named it something like `'todo-data'`
+3. Add some behaviour with `engine.system` - the code inside will run *for each* entity that has the `'data'` component.
+
+Notice there is no explicit looping. The System loops for us. All entities who have the 'data' component will be looped through. You can add additional components to the list, which will mean the system will loop through all components who have all those components (an `and` selector).  
+
+You can have multiple systems, they will run in the order declared.  Each time `engine.tick()` is run, all Systems will be run.
+
+Notice there is no need to store a master list of `todos` - the ECS holds all entities for us.  If we did want to generate a list of todos, its actually a bit tricky. See the next section!
 
 # Gathering results whilst looping
 
@@ -91,7 +179,10 @@ that last housekeeping step can be also be done as a `engine.on('tick:after', (e
 
 # Encapsulating Systems into classes
 
+Just because we are deconstructing classes into an ECS approach doesn't mean we can't use classes to help us. 
 Systems still work when created inside classes - they are registered with the engine and will run ok.
+
+You might want to use a class to group variables together, so they do not pollute the outer namespaces.
 
 ```javascript
 class Persistence {

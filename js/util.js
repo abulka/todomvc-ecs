@@ -28,3 +28,5 @@ class Util {
         }
     }
 }
+
+// module.exports.Util = Util
