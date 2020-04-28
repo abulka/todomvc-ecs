@@ -1,6 +1,11 @@
 # Entity Component System • [TodoMVC](http://todomvc.com)
 
-The classic Javascript [TodoMVC app](https://github.com/tastejs/todomvc) implemented using an architecture typically used in gaming! The Entity Component System (ECS) radically rethinks how models, their data and behaviour is organised.
+Is the [Entity Component System](https://en.wikipedia.org/wiki/Entity_component_system) any good for building traditional GUIs?
+
+It turns out that the answer is yes! Whilst ECS is most commonly used in building games, it can also be used for building a traditional web "form" style application like TodoMVC. However you will need to radically rethink how models, their data and behaviour is organised. 
+
+This is arguably a refreshing, mind-blowing lesson in GUI programming!
+
 
 ![](https://github.com/tastejs/todomvc-app-css/raw/master/screenshot.png)
 
@@ -116,9 +121,9 @@ this is arguably nicer and more encapsulated.
 The only trick is that you need to instantiate the classes in the correct order, so that their Systems are created (via their constructors) at the appropriate point in the 'pipeline' of Systems.
 
 
-## TodoMVC-ECS
+## TodoMVC-ECS - Conclusion
 
-This project fully implements the TodoMVC specification and is implemented using an ECS, as described above.
+The classic Javascript [TodoMVC app](https://github.com/tastejs/todomvc) implemented using an architecture typically used in gaming. This project fully implements the TodoMVC specification.
 
 Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
@@ -129,8 +134,9 @@ Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
 ### Resources
 
-- [GUI Showdown ECS](https://abulka.github.io/gui-showdown/main_ecs.html) another example of an app implemented using the MVCA architecture (Javascript, open source)
-- [GUI Showdown ECS in Python](https://github.com/abulka/gui-showdown) another example of an app implemented using the MVCA architecture (Python, open source)
+- [Jecs](https://www.npmjs.com/package/jecs) ECS library used in this project. There are others like [GGEntities](https://www.npmjs.com/package/gg-entities) etc.
+- [GUI Showdown ECS](https://abulka.github.io/gui-showdown/main_ecs.html) another example of an app implemented using the ECS architecture (Javascript, open source)
+- [GUI Showdown ECS in Python](https://github.com/abulka/gui-showdown) another example of an app implemented using the ECS architecture (Python, open source)
 - Official [TodoMVC project](http://todomvc.com/) with other TodoMVC implementations (e.g. Vue, Angular, React etc.)
 - [GitUML](https://www.gituml.com) diagramming used for this project
 - [Literate Code Mapping](https://github.com/abulka/lcodemaps) diagramming used for this project
@@ -142,11 +148,11 @@ Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
 ### Articles
 
-<!-- - [Medium article]()  (coming in Apr 2020) -->
+- [Medium article]()  (coming in Apr 2020)
 
 <!-- - [MGM](docs_root/mgm.md) pattern (older version of MVCA, presented at a Patterns Conference) -->
 
-- TodoECS - Entity Component System implementation of TodoMVC *(coming mid 2020)*
+<!-- - TodoECS - Entity Component System implementation of TodoMVC *(coming mid 2020)* -->
 
 <!-- ### Support
 
@@ -157,4 +163,4 @@ Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
 Created by [Andy Bulka](http://andypatterns.com)
 
-Note: This project is not not *officially* part of the [TodoMVC project](http://todomvc.com/) - as it is does not use a MVC framework library, nor does it meet the criterion of "having a community" around it.
+Note: This project is not not *officially* part of the [TodoMVC project](http://todomvc.com/) - as it does it meet the criterion of "having a community" around it.
