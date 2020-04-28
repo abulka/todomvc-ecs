@@ -30,20 +30,39 @@ You now have the freedom to attach any Component to any Entity. But why bother?
 
 You would think that a pure data Component like `Position {x:0, y:0}` is always closely tied with a specific Entity - so why break them apart? For example a `Ball` has a Position, a `Person` does not! What a `Person` entity surely needs instead is a `Name {firstname:'John', surname:'Smith'}` etc.
 
-Well, it turns out that the opposite is often true - entities like `Ball`, `Bullet`, `Car` all need `Position`. And in more business oriented applications, `Person`, `Employee`, `Manager` all need a `Name`. Thinking further along these lines, an `Address` is a useful data Component that many Entities would need, and having a single declaration of what an address is saves repeat declarations and errors. 
+Well, it turns out that the opposite is often true - entities like `Ball`, `Bullet`, `Car` all need `Position`. And in more business oriented applications, `Person`, `Employee`, `Manager` all need a `Name`. 
 
-If you think that using class inheritance can achieve the goal of declaring `Address` only once - you would be right. However most languages support only single inheritance, so good luck with forcing disparate inhertiance trees to inherit from a common Address class - that's a bit awkward. With languages that support multiple inheritance (e.g. Python), you will have more luck - in fact multiple inheritance comes closest to matching the idea of ECS, where you can arbitrarily compose a model entity from as many Component data aspects as you like.  
+Thinking further along these lines, another useful component might be `Address` - many Entities would need that. Having a single declaration of `Name` and `Address` etc. saves duplicate declarations and errors.
 
-You could also solve the problem through composition - a class could reference a common instance of `Address` and any other common classes it needs. This would also achieve the goal of declaring `Address` only once and providing 'mix and match' composability of Models, that ECS has.
+#### Inheritance?
+
+If you think that using class *inheritance* can achieve the goal of declaring `Address` only once - you would be right. However most languages support only single inheritance, so good luck with forcing disparate inhertiance trees to inherit from a common Address class - that's a bit awkward. 
+
+With languages that support multiple inheritance (e.g. Python), you will have more luck - in fact multiple inheritance comes closest to matching the idea of ECS, where you can arbitrarily compose a model entity from as many Component data aspects as you like.  
+
+#### Composition?
+
+You could also solve the problem through *composition* - a class could reference a common instance of `Address` and any other common classes it needs. This would also achieve the goal of declaring `Address` only once and providing 'mix and match' composability of Models, that ECS has.
 
 This freedom to decouple data from entities is very powerful, especially when we take the next and final step in understanding ECS - Systems.
 
-### Systems are like DOM/CSS Selectors
+### Systems
 
 Systems are where all the behaviour happens. 
 Systems are code blocks which run across subsets of matched Components. 
 
-I guess it comes from the gaming heritage, where there are many game objects to process: looping is central to ECS. If you have a for loop in your code you are probably doing it wrong. Systems magically iterate across entites that match certain Components e.g. all entities who have a Speed component and a Position component. Its like having a CSS selector and running a code block for all matches.
+#### Selecting
+
+Systems are like DOM/CSS Selectors, where you select on one or more Component names.
+The system will loop through all components who have all those components (an `and` concept).
+
+#### Looping
+
+I guess it comes from the gaming heritage, where there are many game objects to process: looping is central to ECS. 
+
+> If you have an explicit for loop in your code you are probably doing ECS wrong!
+
+Systems magically iterate across entites that match certain Components e.g. all entities who have a Speed component and a Position component. Its like having a CSS selector and running a code block for all matches.
 
 ### Choosing an ECS framework
 
@@ -215,6 +234,8 @@ The only trick is that you need to instantiate the classes in the correct order,
 ## TodoMVC-ECS - Conclusion
 
 The classic Javascript [TodoMVC app](https://github.com/tastejs/todomvc) implemented using an architecture typically used in gaming. This project fully implements the TodoMVC specification.
+
+All the code is in [app.js](https://github.com/abulka/todomvc-ecs/blob/master/js/app.js).
 
 Running demo [here](https://abulka.github.io/todomvc-ecs/index.html).
 
