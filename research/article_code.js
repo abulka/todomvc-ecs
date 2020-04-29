@@ -57,3 +57,14 @@ engine.system('report', ['data'], (entity, { data }) => {
     console.log(`Todo item ${data.title} has id ${entity.name} and ${is_or_is_not} completed`)
 });
 engine.tick()
+
+// -------
+
+let e = engine.entity('person 1')
+e.setComponent('Name', {firstname:'John', surname:'Smith'})
+e.setComponent('Address', {number: 12, street: 'Bounty Drive', state: 'WA'})
+console.log(e.name, JSON.stringify(e.getComponent('Name')), JSON.stringify(e.getComponent('Address')))
+e.setComponent('Flag', {})
+console.log(e.name, JSON.stringify(e.getComponent('Flag')))
+e.setComponent('Flag2', null)
+console.log(e.name, JSON.stringify(e.getComponent('Flag2')))
