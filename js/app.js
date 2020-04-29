@@ -83,7 +83,7 @@
 
     // Systems
 
-    // Create a single entity we can use whenever we want a system to run once, for housekeeping tasks
+    // Create a single entity with a single component, for triggering housekeeping tasks
     engine.entity('single-step').setComponent('housekeeping', {})
 
     engine.system('mark-all-todos-as-complete', ['data'], (entity, { data }) => {
