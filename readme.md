@@ -133,67 +133,49 @@ Notice there is no need to store a master list of `todos` - the ECS holds all en
 
 # Gathering results whilst looping
 
-This is a key technique that I found I needed.
+The problem here is that any variables you use to store intermediate results from a system run, need to reset before each run.
 
-## Ans. buffer intermediate results:
+If you want to store the results of the code which runs in a System, you can say, append to a variable or data structure. For example if we want to gather the list of all todo items into a list, we simply create a variable `todos = []` then place the following code inside a System `todos.push(data)`. After the `engine.tick()` you will have a full list of all the todo entities. Alternatively, you could push the entity component data instead, which is what I do to generate the JSON to persist in the browser storage. (Try the live [demo](https://abulka.github.io/todomvc-ecs/index.html) and hit refresh - the same todo items survive, because of this persistence).
+
+When there is any change to the application, you will need to trigger `engine.tick()` again, in order to re-render the GUI. You will find that `todos` keeps growing. It needs to be reset prior to each `tick`. One way of doing this is to to leverage the `'tick:before'` event - before each run of all Systems, extra commands can be added:
 
 ```javascript
-  let welcome_user_render = {welcome, firstname, surname}  // create an empty object to buffer
-
-  engine.system('render-display', ['data', 'displayOptions'], (entity, {data, displayOptions}) => {
-    if (entity.name == 'model-welcome-message') {
-      // buffer intermediate result
-      welcome_user_render.welcome = displayOptions.upperright ? data.val.toUpperCase() : data.val
-    }
-  }
-...
-
-  engine.on('tick:after', (engine) => { 
-    // flush out pending renders from buffer
-    $('#welcome-user').html(`${welcome_user_render.welcome} ${welcome_user_render.firstname} ${welcome_user_render.surname} `)
-  })
-
+engine.on('tick:before', (engine) => {
+    todos = []  // reset
+})
 ```
 
-Could leverage the ECS pipeline and rendering to do things in stages
-properly. Which then looks like:
+If you need to initialise variables in the middle of a system run (remember the order that systems run in is critical, with one system often feeding results into another system) then reseting at the start or beginning won't work.  What we need is System which does the reset or housekeeping tasks, which we can place anywhere in our list of Systems.  But what System is there that matches one component, and thus will run only once?  Let's create a single component called `'housekeeping'` which will serve as the trigger for the housekeeping System step.
 
 ```javascript
-const topright = engine.entity('display-model-topright');
-topright.setComponent('renderData', { welcome:"", firstname:"", surname:"" })
+engine.entity('single-step').setComponent('housekeeping', {})
+```
 
-engine.system('render-display', ['data', 'displayOptions'], (entity, { data, displayOptions }) => {
-  topright.getComponent('renderData').welcome = 'blah'
+Now we can insert a housekeeping step anywhere in our code like this:
+
+```javascript
+engine.system('reset-todos', ['housekeeping'], (entity, { housekeeping }) => {
+    this.todos = []
+})
+```
+
+You can use this technique to insert as many sytems like this as you like, at the appropriate places in your code. I'm not sure if it is kosher ECS usage, but its a technique I found I needed.
+
+Thus the full code for gathering a list of todos is
+
+```javascript
+let todos_data = []
+
+engine.system('reset-todo-list', ['housekeeping'], (entity, { housekeeping }) => {
+    todos_data = []
 });
-
-engine.system('render-display-topright', ['renderData'], (entity, { renderData }) => {
-  $topright.html(`${renderData.welcome} ${renderData.firstname} ${renderData.surname} `)
+engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
+    todos_data.push(data)  // or push data.title, or push the entity, or whatever you need
 });
-```
-
-## Another example of buffering
-
-```javascript
-    let todos_data = []  // gather this list for persistence purposes, array of pure data dicts
-    engine.system('reset-gather-for-save', ['housekeeping'], (entity, { housekeeping }) => {
-        todos_data = []
-    });
-    engine.system('gather-todos-for-save', ['data'], (entity, { data }) => {
-        todos_data.push(data)
-    });
-    engine.system('save', ['housekeeping'], (entity, { housekeeping }) => {
-        util.store('todos-oo', todos_data)
-        console.log('saved', JSON.stringify(todos_data))
-    });
-```
-
-that last housekeeping step can be also be done as a `engine.on('tick:after', (engine) => { ` e.g.
-
-```javascript
-  engine.on('tick:after', (engine) => { 
-      util.store('todos-oo', todos_data)
-      console.log('saved', JSON.stringify(todos_data))
-  })
+engine.system('report-final-result', ['housekeeping'], (entity, { housekeeping }) => {
+    console.log('final list of todos', todos_data)
+});
+engine.tick()
 ```
 
 # Encapsulating Systems into classes
@@ -230,8 +212,27 @@ this is arguably nicer and more encapsulated.
 
 The only trick is that you need to instantiate the classes in the correct order, so that their Systems are created (via their constructors) at the appropriate point in the 'pipeline' of Systems.
 
+## The tick
+
+When there is any change to the application, you will need to trigger `engine.tick()` again, in order to re-render the GUI. The tick simply re-runs all systems.
+
+If you feel like calling tick is too much manual work, then what games tend to do is use the ECS simulator or timer to call tick automatically, periodically at a certain 'frame rate'. I don't recommend doing this for a GUI app because updates don't need to happen that fast.
+
+## No Events
+
+Whilst there are GUI events. notice there are no 'internal' events in this approach. This is a very real benefit, as event flow can be hard to follow.
+
+The efficiency of the ECS approach is not as good as an event based approach however, because we are re-rendering more than we need to. Internal events give us a finer grained control over what needs to be updated in the GUI.
+
+Adding a dirty flag to entities that need updating can fix this. I'd recommend a Component called `'dirty'` which can be attached to entities. Then refine your Systems to only match on todo data that is dirty e.g.
+
+```javascript
+engine.system('process-changed-todoitems', ['data', 'dirty'], (entity, {data, _}) => { ... }
+```
 
 ## TodoMVC-ECS - Conclusion
+
+This approach to wiring up GUI's has been most refreshing. I find the ECS approach fascinating and will be looking for ways to use decoupled Systems in my future projects.
 
 The classic Javascript [TodoMVC app](https://github.com/tastejs/todomvc) implemented using an architecture typically used in gaming. This project fully implements the TodoMVC specification.
 
