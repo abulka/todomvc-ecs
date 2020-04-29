@@ -29,4 +29,6 @@ class Util {
     }
 }
 
-// module.exports.Util = Util
+// Only create an export for node if running under node
+if (typeof module !== 'undefined' && module.exports)
+    module.exports.Util = Util
