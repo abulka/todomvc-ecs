@@ -405,6 +405,8 @@ Entity Component System frameworks are actually relatively simple. They offer wa
 
 For this project I chose to use the javascript [Jecs](https://www.npmjs.com/package/jecs) library.
 
+![jecs-ecs-architecture](https://raw.githubusercontent.com/abulka/todomvc-ecs/master/docs/images/jecs.svg?sanitize=true)
+
 The single file `jecs.js` can be copied into your project and with the usual `<script src="jecs.js"></script>` you are all set to go. Or you can `npm install jecs` and require it in your node projects.
 
 For my Python ECS projects I use [Esper](https://github.com/benmoran56/esper) which is a lightweight Entity System for Python, with a focus on performance.
@@ -412,7 +414,6 @@ For my Python ECS projects I use [Esper](https://github.com/benmoran56/esper) wh
 # Conclusion
 
 This approach to wiring up GUI's has been most refreshing. I find the ECS approach fascinating and will be looking for ways to use decoupled Systems in my future projects.
-
 
 # Resources
 
