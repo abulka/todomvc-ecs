@@ -6,6 +6,6 @@ Is [gituml diagram 170](https://www.gituml.com/viewz/170)
 
 # jecs.svg
 
-Is [gituml diagram 186](https://www.gituml.com/viewz/168)
+Is [gituml diagram 168](https://www.gituml.com/viewz/168)
 
 `jecs.png` version is just a screenshot
