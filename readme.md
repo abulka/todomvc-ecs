@@ -85,6 +85,12 @@ Systems are where most of the application behaviour happens, including rendering
 
 The idea is to have lots of Systems, one after each other, each doing a bit of work that can be reasoned about simply.
 
+![TodoMVC-ECS Architecture Partial Diagram](https://abulka.github.io/todomvc-ecs/images/ecs-partial.png)
+
+- The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
+- Click [here](https://abulka.github.io/todomvc-ecs/images/ecs-full.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
+- View this actual [diagram 170](https://www.gituml.com/viewz/170) on GitUML.
+
 ## Selecting
 
 Systems are code blocks which run across subsets of entities which have *all* the components listed in each System's declaration e.g. `['data', 'dirty']` means all entities that possess both these components will be processed.
@@ -405,6 +411,12 @@ Entity Component System frameworks are actually relatively simple. They offer wa
 
 For this project I chose to use the javascript [Jecs](https://www.npmjs.com/package/jecs) library.
 
+![Jecs ESC Framework for Javascript - UML](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true)
+
+- The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
+- Click [here](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
+- View this actual [diagram 168](https://www.gituml.com/viewz/168) on GitUML.
+
 The single file `jecs.js` can be copied into your project and with the usual `<script src="jecs.js"></script>` you are all set to go. Or you can `npm install jecs` and require it in your node projects.
 
 For my Python ECS projects I use [Esper](https://github.com/benmoran56/esper) which is a lightweight Entity System for Python, with a focus on performance.
@@ -428,7 +440,7 @@ This approach to wiring up GUI's has been most refreshing. I find the ECS approa
 - [GUI Showdown ECS](https://abulka.github.io/gui-showdown/main_ecs.html) another example of an app implemented using the ECS architecture (Javascript, open source). Aso see [GUI Showdown ECS in Python](https://github.com/abulka/gui-showdown). 
 
 #### TodoMVC related
-- [TodoMVC-OO](https://github.com/abulka/todomvc-oo") GitHub Repo - another of my TodoMVC implementations. The classic Javascript TodoMVC app implemented without a framework, using plain Object Oriented programming.
+- [TodoMVC-OO](https://github.com/abulka/todomvc-oo) GitHub Repo - another of my TodoMVC implementations. The classic Javascript TodoMVC app implemented without a framework, using plain Object Oriented programming.
 
 - Official [TodoMVC project](http://todomvc.com/) with other TodoMVC implementations (e.g. Vue, Angular, React etc.)
 
