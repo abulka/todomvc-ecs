@@ -86,6 +86,7 @@ Systems are where most of the application behaviour happens, including rendering
 The idea is to have lots of Systems, one after each other, each doing a bit of work that can be reasoned about simply.
 
 ![TodoMVC-ECS Architecture Partial Diagram](https://abulka.github.io/todomvc-ecs/images/ecs-partial.png)
+*TodoMVC-ECS Architecture - Partial Diagram*
 
 - The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
 - Click [here](https://abulka.github.io/todomvc-ecs/images/ecs-full.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
@@ -412,6 +413,7 @@ Entity Component System frameworks are actually relatively simple. They offer wa
 For this project I chose to use the javascript [Jecs](https://www.npmjs.com/package/jecs) library.
 
 ![Jecs ESC Framework for Javascript - UML](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true)
+*Jecs ESC Framework for Javascript - UML.*
 
 - The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
 - Click [here](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
