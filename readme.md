@@ -147,7 +147,7 @@ Systems are where most of the application behaviour happens, including rendering
 The idea is to have lots of Systems, one after each other, each doing a bit of work that can be reasoned about simply.
 
 ![TodoMVC-ECS Architecture Partial Diagram](https://abulka.github.io/todomvc-ecs/images/ecs-partial.png)
-*TodoMVC-ECS Architecture - Partial 'Literate Code Map' Diagram*
+*TodoMVC-ECS Architecture - 'Literate Code Map' diagram*
 
 - The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
 - Click [here](https://abulka.github.io/todomvc-ecs/images/ecs-full.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
