@@ -25,6 +25,67 @@ You can read about Entity Systems in this [Wikipedia article](https://medium.com
 - Component = data
 - System = behaviour
 
+# Example - Traditional Class vs ECS
+
+A traditional class Model of a `Todo` item would look like:
+
+```javascript
+class TodoItem {
+    constructor(title, completed, id) {
+        this.title = title
+        this.completed = completed
+        this.id = id == undefined ? util.uuid() : id
+    }
+    report() {
+        let is_or_is_not = this.completed ? 'is' : 'is not'
+        console.log(`Todo item ${this.title} ${is_or_is_not} completed`)
+    }
+}
+
+let todos = []
+todos.push(new TodoItem('make lunch', true))
+todos.push(new TodoItem('wash dishes', false))
+
+todos.forEach(function (todo) {
+    todo.report()
+})
+```
+
+which would generate:
+
+```
+$ node example.js 
+Todo item make lunch has id 1 and is completed
+Todo item wash dishes has id 2 and is not completed
+```
+
+wheras the ECS approach would look like this:
+
+```javascript
+const engine = new Engine();
+
+engine.entity(util.uuid()).setComponent('data', {title:'make lunch',  completed:true})
+engine.entity(util.uuid()).setComponent('data', {title:'wash dishes',  completed:false})
+
+engine.system('report', ['data'], (entity, { data }) => {
+    let is_or_is_not = data.completed ? 'is' : 'is not'
+    console.log(`Todo item ${data.title} has id ${entity.name} and ${is_or_is_not} completed`)
+});
+engine.tick()
+```
+
+Let's break this down:
+
+1. Creating an entity is just `engine.entity()`
+2. Give the entity some data fields with `entity.setComponent('data', {title,  completed, id})`. The name of this component happens to be `'data'` because I chose that name, but I could have named it something like `'todo-data'`
+3. Add some behaviour with `engine.system` - the code inside will run *for each* entity that has the `'data'` component.
+
+Notice there is no explicit looping. The System loops for us. All entities who have the 'data' component will be looped through. You can add additional components to the list, which will mean the system will loop through all components who have *all* those components (an `and` selector).  
+
+You can have multiple systems, they will run in the order declared.  Each time `engine.tick()` is run, all Systems will be run.
+
+Notice there is no need to store a master list of `todos` - the ECS holds all entities for us.  If we did want to generate a list of todos, its actually a bit tricky. See the next section [Gathering results whilst looping](#gathering-results-whilst-looping).
+
 # The freedom to attach any Component to any Entity
 You now have the freedom to attach any Component to any Entity. But why bother? 
 
@@ -84,6 +145,13 @@ This freedom to decouple data from entities is very powerful, especially when we
 Systems are where most of the application behaviour happens, including rendering/updating the DOM.
 
 The idea is to have lots of Systems, one after each other, each doing a bit of work that can be reasoned about simply.
+
+![TodoMVC-ECS Architecture Partial Diagram](https://abulka.github.io/todomvc-ecs/images/ecs-partial.png)
+*TodoMVC-ECS Architecture - 'Literate Code Map' diagram*
+
+- The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
+- Click [here](https://abulka.github.io/todomvc-ecs/images/ecs-full.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
+- View this actual [diagram 170](https://www.gituml.com/viewz/170) on GitUML.
 
 ## Selecting
 
@@ -149,68 +217,7 @@ engine.on('tick:after', (engine) => {
 })
 ```
 
-# Example - Traditional Class vs ECS
-
-A traditional class Model of a `Todo` item would look like:
-
-```javascript
-class TodoItem {
-    constructor(title, completed, id) {
-        this.title = title
-        this.completed = completed
-        this.id = id == undefined ? util.uuid() : id
-    }
-    report() {
-        let is_or_is_not = this.completed ? 'is' : 'is not'
-        console.log(`Todo item ${this.title} ${is_or_is_not} completed`)
-    }
-}
-
-let todos = []
-todos.push(new TodoItem('make lunch', true))
-todos.push(new TodoItem('wash dishes', false))
-
-todos.forEach(function (todo) {
-    todo.report()
-})
-```
-
-which would generate:
-
-```
-$ node example.js 
-Todo item make lunch has id 1 and is completed
-Todo item wash dishes has id 2 and is not completed
-```
-
-wheras the ECS approach would look like this:
-
-```javascript
-const engine = new Engine();
-
-engine.entity(util.uuid()).setComponent('data', {title:'make lunch',  completed:true})
-engine.entity(util.uuid()).setComponent('data', {title:'wash dishes',  completed:false})
-
-engine.system('report', ['data'], (entity, { data }) => {
-    let is_or_is_not = data.completed ? 'is' : 'is not'
-    console.log(`Todo item ${data.title} has id ${entity.name} and ${is_or_is_not} completed`)
-});
-engine.tick()
-```
-
-Let's break this down:
-
-1. Creating an entity is just `engine.entity()`
-2. Give the entity some data fields with `entity.setComponent('data', {title,  completed, id})`. The name of this component happens to be `'data'` because I chose that name, but I could have named it something like `'todo-data'`
-3. Add some behaviour with `engine.system` - the code inside will run *for each* entity that has the `'data'` component.
-
-Notice there is no explicit looping. The System loops for us. All entities who have the 'data' component will be looped through. You can add additional components to the list, which will mean the system will loop through all components who have *all* those components (an `and` selector).  
-
-You can have multiple systems, they will run in the order declared.  Each time `engine.tick()` is run, all Systems will be run.
-
-Notice there is no need to store a master list of `todos` - the ECS holds all entities for us.  If we did want to generate a list of todos, its actually a bit tricky. See the next section [Gathering results whilst looping](#gathering-results-whilst-looping).
-
-# ECS enhancements
+# ECS - extra useful tricks
 
 I ended up creating a couple of tricks to get ECS to do what I wanted in certain cases.
 
@@ -405,7 +412,13 @@ Entity Component System frameworks are actually relatively simple. They offer wa
 
 For this project I chose to use the javascript [Jecs](https://www.npmjs.com/package/jecs) library.
 
-![jecs-ecs-architecture](https://raw.githubusercontent.com/abulka/todomvc-ecs/master/docs/images/jecs.svg?sanitize=true)
+![Jecs ESC Framework for Javascript - UML](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true)
+
+*Jecs ESC Framework for Javascript - UML diagram.*
+
+- The above diagram was generated semi-automatically from Javascript source code residing in GitHub using [GitUML](www.gituml.com).
+- Click [here](https://abulka.github.io/todomvc-ecs/images/jecs.svg?sanitize=true) for more diagram detail as a .svg and the ability to zoom. 
+- View this actual [diagram 168](https://www.gituml.com/viewz/168) on GitUML.
 
 The single file `jecs.js` can be copied into your project and with the usual `<script src="jecs.js"></script>` you are all set to go. Or you can `npm install jecs` and require it in your node projects.
 
@@ -429,7 +442,7 @@ This approach to wiring up GUI's has been most refreshing. I find the ECS approa
 - [GUI Showdown ECS](https://abulka.github.io/gui-showdown/main_ecs.html) another example of an app implemented using the ECS architecture (Javascript, open source). Aso see [GUI Showdown ECS in Python](https://github.com/abulka/gui-showdown). 
 
 #### TodoMVC related
-- [TodoMVC-OO](https://github.com/abulka/todomvc-oo") GitHub Repo - another of my TodoMVC implementations. The classic Javascript TodoMVC app implemented without a framework, using plain Object Oriented programming.
+- [TodoMVC-OO](https://github.com/abulka/todomvc-oo) GitHub Repo - another of my TodoMVC implementations. The classic Javascript TodoMVC app implemented without a framework, using plain Object Oriented programming.
 
 - Official [TodoMVC project](http://todomvc.com/) with other TodoMVC implementations (e.g. Vue, Angular, React etc.)
 
