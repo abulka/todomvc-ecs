@@ -133,6 +133,9 @@ person 1 {"firstname":"John","surname":"Smith"} {"number":12,"street":"Bounty Dr
 
 You can attach even Components that have no actual data. Sometimes this technique is useful to mark entities e.g. a `dirty` Component flag for rendering purposes, or a `delete` Component flag etc. so that a System selector matches on this condition (of having this flag) and triggers that particular System to run. This technique is further discussed in the section entitled [Components as Flags](#components-as-flags), later.
 
+Here is an example of adding various 'Flag' Components to an entity - of course you would name the components better e.g. in TodoMVC-ECS `editingmode` is such a Component used as a flag. The presence of the flag Component on an entity will trigger a particular System. Notice that in this example the Component data 
+is either an empty object `{}` or `null`. Typically (though your situation may be different) its the presence of the Component attached to the entity that matters, not the Component data.
+
 ```javascript
 e.setComponent('Flag', {})
 e.setComponent('Flag2', null)
@@ -311,7 +314,11 @@ Systems 'doing stuff' typically means updating component or other data and rende
 
 For example, my `'think-todoitem'` System decides whether a todo entity needs the GUI DOM `<li>` created or updated, adding either the component `'insert'` or `'update'` to each entity. *Note that the 'insert' and 'update' components have empty data `{}` attached thus the component acts like a flag*.
 
-I use this trick extensively in this Todo implementation.
+I use this trick extensively in this Todo implementation. 
+
+When I asked an ECS expert about this approach, he said:
+
+> Attaching and detaching components in order to activate a system is absolutely the way to go. In fact, it is one of the biggest advantages of using ECS, since, in this way, you are changing the behaviour by taking advantage of the composition.
 
 ## Encapsulating Systems into classes
 
@@ -472,4 +479,4 @@ This approach to wiring up GUI's has been most refreshing. I find the ECS approa
 
 Created by [Andy Bulka](http://andypatterns.com)
 
-Note: This project is not not *officially* part of the [TodoMVC project](http://todomvc.com/) - as it does it meet the criterion of "having a community" around it.
+Note: This project is not not officially part of the [TodoMVC project](http://todomvc.com/) - as it does it meet the criterion of "having a community" around it.
