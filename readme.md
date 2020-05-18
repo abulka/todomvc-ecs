@@ -59,7 +59,7 @@ Todo item make lunch has id 1 and is completed
 Todo item wash dishes has id 2 and is not completed
 ```
 
-wheras the ECS approach would look like this:
+whereas the ECS approach would look like this:
 
 ```javascript
 const engine = new Engine();
